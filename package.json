@@ -1,0 +1,32 @@
+{
+  "name": "poly-sense-be",
+  "version": "1.0.1",
+  "type": "module",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/belimm/poly-sense.git"
+  },
+  "author": "Belimdev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/belimm/poly-sense/issues"
+  },
+  "homepage": "https://github.com/belimm/poly-sense#readme",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.4",
+    "@types/node": "^24.9.1",
+    "typescript": "^5.9.3"
+  }
+}

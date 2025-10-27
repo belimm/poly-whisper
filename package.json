@@ -1,6 +1,6 @@
 {
   "name": "poly-sense-be",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "",
   "main": "index.js",
@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/belimm/poly-sense#readme",
   "dependencies": {
+    "@google/genai": "^1.27.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "ws": "^8.18.3"

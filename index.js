@@ -1,6 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import TwitterWebSocketService from './src/services/twitterWebSocket.js';
+import TweetPipeline from './src/services/tweetPipeline.js';
+import TweetAnalyzer from './src/services/tweetAnalyzer.js';
+import PolymarketService from './src/services/polymarketService.js';
 
 // Load environment variables
 dotenv.config();
@@ -13,11 +16,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Store for tweets (in production, you'd use a proper database)
-const tweets = [];
+const tweets = [ {
+            "tweetId": "1982870059136757864",
+            "text": "RT @amXFreeze: Grok 4 still ranks #1 on the FinSearchComp Benchmark\n\nIt's a first expert-level benchmark for financial search &amp; reasoning…",
+            "createdAt": "Mon Oct 27 18:00:36 +0000 2025",
+            "authorId": "44196397",
+            "authorName": "Elon Musk",
+            "likeCount": 109,
+            "retweetCount": 24,
+            "replyCount": 28,
+            "receivedAtMs": 1761588038716
+        }];
 const MAX_TWEETS_STORED = 1000; // Limit stored tweets to prevent memory issues
 
-// Initialize Twitter WebSocket Service
+// Initialize services
 const twitterWS = new TwitterWebSocketService();
+const tweetAnalyzer = new TweetAnalyzer();
+const polymarketService = new PolymarketService();
 
 // WebSocket event handlers
 twitterWS.on('connected', () => {
@@ -28,14 +43,19 @@ twitterWS.on('handshake', () => {
    console.log('✅ Twitter API handshake completed');
 });
 
-twitterWS.on('tweet', (tweet) => {
-   console.log('📧 NEW TWEET:', tweet);
-   
-   // Store tweet (with rotation to prevent memory overflow)
-   tweets.unshift(tweet);
+// Use a processing pipeline to analyze tweets and enrich with Polymarket results
+const tweetPipeline = new TweetPipeline(twitterWS);
+tweetPipeline.on('enrichedTweet', (enriched) => {
+   console.log('📧 ENRICHED TWEET:', enriched);
+
+   // Store enriched tweet (with rotation to prevent memory overflow)
+   tweets.unshift(enriched);
    if (tweets.length > MAX_TWEETS_STORED) {
       tweets.pop();
    }
+});
+tweetPipeline.on('error', (err) => {
+   console.error('Tweet pipeline error:', err);
 });
 
 twitterWS.on('disconnected', ({ code, reason }) => {
@@ -60,6 +80,7 @@ app.get('/', (req, res) => {
          health: '/health',
          tweets: '/tweets',
          'tweets/latest': '/tweets/latest',
+         'tweets/analyze': '/tweets/analyze',
          'websocket/status': '/websocket/status',
          'websocket/reconnect': '/websocket/reconnect'
       }
@@ -99,6 +120,104 @@ app.get('/tweets/latest', (req, res) => {
       tweets: latestTweets,
       count: latestTweets.length
    });
+});
+
+app.get('/tweets/analyze', async (req, res) => {
+   try {
+      const count = parseInt(req.query.count) || 10;
+      const useLLM = req.query.llm === 'true'; // Add ?llm=true to use LLM analysis
+      const latestTweets = tweets.slice(0, count);
+      
+      // Analyze tweets that haven't been processed through the pipeline
+      const analyzedTweets = [];
+      const marketSummary = {};
+      const keywordFrequency = {};
+      const categorySummary = {};
+      
+      for (const tweet of latestTweets) {
+         let analysis;
+         let polymarketMatches = [];
+         
+         // Check if tweet is already enriched (from pipeline)
+         if (tweet.analysis && tweet.polymarketMatches) {
+            analysis = tweet.analysis;
+            polymarketMatches = tweet.polymarketMatches;
+         } else {
+            // Analyze raw tweet
+            const tweetText = tweet.text || tweet.message || JSON.stringify(tweet);
+            
+            // Use LLM analysis if requested and available
+            if (useLLM) {
+               analysis = await tweetAnalyzer.analyzeWithLLM(tweetText);
+            } else {
+               analysis = tweetAnalyzer.analyzeTweet(tweetText);
+            }
+            
+            // Search Polymarket for each keyword
+            for (const keyword of analysis.keywords || []) {
+               try {
+                  const data = await polymarketService.search(keyword, { size: 3 });
+                  polymarketMatches.push({ keyword, data });
+               } catch (err) {
+                  console.error('Polymarket search failed for keyword', keyword, err?.message || err);
+               }
+            }
+         }
+         
+         analyzedTweets.push({
+            tweet: tweet.original || tweet,
+            analysis,
+            polymarketMatches
+         });
+         
+         // Build summary statistics
+         for (const keyword of analysis.keywords || []) {
+            keywordFrequency[keyword] = (keywordFrequency[keyword] || 0) + 1;
+         }
+         
+         for (const category of analysis.categories || []) {
+            categorySummary[category] = (categorySummary[category] || 0) + 1;
+         }
+         
+         // Count markets found per keyword
+         for (const match of polymarketMatches) {
+            const marketCount = match.data?.results?.length || 0;
+            if (marketCount > 0) {
+               marketSummary[match.keyword] = (marketSummary[match.keyword] || 0) + marketCount;
+            }
+         }
+      }
+      
+      // Sort summaries by frequency/count
+      const topKeywords = Object.entries(keywordFrequency)
+         .sort(([,a], [,b]) => b - a)
+         .slice(0, 10);
+      
+      const topCategories = Object.entries(categorySummary)
+         .sort(([,a], [,b]) => b - a);
+      
+      const topMarkets = Object.entries(marketSummary)
+         .sort(([,a], [,b]) => b - a)
+         .slice(0, 10);
+      
+      res.json({
+         summary: {
+            tweetsAnalyzed: analyzedTweets.length,
+            uniqueKeywords: Object.keys(keywordFrequency).length,
+            topKeywords: topKeywords.map(([kw, count]) => ({ keyword: kw, frequency: count })),
+            topCategories: topCategories.map(([cat, count]) => ({ category: cat, frequency: count })),
+            topMarkets: topMarkets.map(([kw, count]) => ({ keyword: kw, marketsFound: count })),
+            analyzedAt: new Date().toISOString()
+         },
+         tweets: analyzedTweets
+      });
+   } catch (error) {
+      console.error('Tweet analysis error:', error);
+      res.status(500).json({
+         error: 'Failed to analyze tweets',
+         message: error.message
+      });
+   }
 });
 
 app.get('/websocket/status', (req, res) => {

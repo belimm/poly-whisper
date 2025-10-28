@@ -226,13 +226,11 @@ app.get('/websocket/status', (req, res) => {
 
 app.post('/websocket/reconnect', (req, res) => {
    try {
-      twitterWS.disconnect();
-      setTimeout(() => {
-         twitterWS.connect();
-      }, 1000);
+      console.log('🔄 Manual reconnection requested via API');
+      twitterWS.forceReconnect();
       
       res.json({
-         message: 'Reconnection initiated',
+         message: 'Force reconnection initiated (attempts reset)',
          timestamp: new Date().toISOString()
       });
    } catch (error) {

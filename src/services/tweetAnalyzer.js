@@ -37,7 +37,9 @@ export default class TweetAnalyzer {
 
   // Synchronous lightweight analyzer that returns keywords + categories
   analyzeTweet(text = '') {
-    const lower = String(text).toLowerCase();
+    // Clean retweet prefix if present
+    const cleanText = this._cleanRetweetText(String(text));
+    const lower = cleanText.toLowerCase();
     const keywords = [];
     const categories = new Set();
 
@@ -52,7 +54,7 @@ export default class TweetAnalyzer {
 
     // If none matched, try extracting proper nouns / capitalized tokens as hints
     if (keywords.length === 0) {
-      const caps = (String(text).match(/([A-Z][a-zA-Z]{2,})/g) || []).slice(0, 3);
+      const caps = (cleanText.match(/([A-Z][a-zA-Z]{2,})/g) || []).slice(0, 3);
       for (const c of caps) {
         const token = c.toLowerCase();
         keywords.push(token);
@@ -60,9 +62,11 @@ export default class TweetAnalyzer {
     }
 
     return {
-      text: String(text),
+      text: cleanText,
+      originalText: String(text),
       keywords: Array.from(new Set(keywords)),
       categories: Array.from(categories),
+      isRetweet: this._isRetweet(String(text)),
       analyzedAt: new Date().toISOString()
     };
   }
@@ -77,8 +81,11 @@ export default class TweetAnalyzer {
     }
 
     try {
+      // Clean retweet text before LLM analysis
+      const cleanText = this._cleanRetweetText(String(text));
+      
       // Get LLM analysis
-      const llmResult = await client.analyzeTweet(text);
+      const llmResult = await client.analyzeTweet(cleanText);
       
       // Combine LLM results with heuristic analysis for better coverage
       const heuristicResult = this.analyzeTweet(text);
@@ -97,7 +104,8 @@ export default class TweetAnalyzer {
       ];
 
       return {
-        text: String(text),
+        text: cleanText,
+        originalText: String(text),
         keywords: Array.from(new Set(allKeywords)).slice(0, 10), // limit to 10 most relevant
         categories: Array.from(new Set(allCategories)),
         sentiment: llmResult.sentiment || 'neutral',
@@ -108,6 +116,7 @@ export default class TweetAnalyzer {
           market_events: llmResult.market_events || []
         },
         reasoning: llmResult.reasoning || 'LLM analysis completed',
+        isRetweet: this._isRetweet(String(text)),
         analyzedAt: new Date().toISOString(),
         source: 'llm+heuristic'
       };
@@ -124,5 +133,18 @@ export default class TweetAnalyzer {
         source: 'heuristic-fallback'
       };
     }
+  }
+  
+  // Helper method to detect retweets
+  _isRetweet(text) {
+    return /^RT @\w+:/i.test(String(text).trim());
+  }
+  
+  // Helper method to clean retweet prefix
+  _cleanRetweetText(text) {
+    const cleanText = String(text).trim();
+    // Match "RT @username: " pattern and remove it (using 's' flag to match newlines)
+    const retweetMatch = cleanText.match(/^RT @\w+:\s*(.*)/is);
+    return retweetMatch ? retweetMatch[1].trim() : cleanText;
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "poly-sense-be",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "description": "",
   "main": "index.js",

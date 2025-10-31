@@ -1,0 +1,37 @@
+# Docker and deployment files
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+
+# Runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and test reports
+coverage/
+.nyc_output
+.coverage
+test-results/
+
+# Build artifacts
+dist/
+build/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/

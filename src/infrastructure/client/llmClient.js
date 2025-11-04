@@ -63,27 +63,36 @@ class GoogleAIClient {
    // Specialized method for tweet analysis
    async analyzeTweet(tweetText) {
       const prompt = `
-  Analyze the following tweet for financial/market opportunities and betting scenarios. Extract:
+  Analyze this tweet to extract prediction market opportunities. Focus on:
 
-  1. **Financial Instruments**: Any stocks, crypto, commodities, currencies mentioned
-  2. **Key Entities**: Companies, people, teams, countries that could affect markets
-  3. **Market Events**: News, announcements, events that could create betting opportunities
-  4. **Sentiment**: Positive, negative, or neutral toward mentioned entities
-  5. **Betting Keywords**: Terms that could translate to Polymarket searches
-  6. **Categories**: Tag as crypto, sports, politics, commodities, stocks, etc.
+  **CRITICAL RULES:**
+  1. IGNORE stop words (when, where, what, who, why, how, will, the, is, are, etc.)
+  2. Extract MULTI-WORD PHRASES, not single words (e.g., "turkey election" NOT "turkey", "when")
+  3. Focus on SPECIFIC EVENTS, ENTITIES, and TOPICS that can be predicted
+  4. Combine related words into meaningful search terms
+
+  **Extract:**
+  - **Financial Instruments**: Stocks, crypto, commodities, currencies (symbols/tickers)
+  - **Key Entities**: Companies, people, teams, countries, organizations
+  - **Market Events**: Specific events, elections, announcements, sports matches, releases
+  - **Betting Keywords**: 2-4 word phrases that describe prediction market topics
+    * Examples: "turkey election", "bitcoin price", "apple earnings", "world cup winner"
+    * NOT: "when", "will", "happen", "what", "is"
+  - **Sentiment**: positive/negative/neutral
+  - **Categories**: crypto, sports, politics, finance, entertainment, tech, etc.
 
   Tweet: "${tweetText}"
 
-  Respond in JSON format:
+  Respond ONLY with valid JSON:
   {
-    "financial_instruments": ["list of tickers, crypto symbols, commodities"],
-    "key_entities": ["companies, people, teams, countries"],
-    "market_events": ["specific events or news mentioned"],
+    "financial_instruments": ["BTC", "TSLA"],
+    "key_entities": ["Elon Musk", "Turkey", "Apple"],
+    "market_events": ["turkey election", "iphone launch"],
     "sentiment": "positive|negative|neutral",
-    "betting_keywords": ["searchable terms for prediction markets"],
-    "categories": ["crypto", "sports", "politics", "commodities", "stocks"],
+    "betting_keywords": ["turkey election", "bitcoin price"],
+    "categories": ["politics", "crypto"],
     "confidence": 0.95,
-    "reasoning": "Brief explanation of analysis"
+    "reasoning": "Brief explanation"
   }`;
 
       try {
@@ -128,7 +137,7 @@ class GoogleAIClient {
    }
 
    _extractFallbackKeywords(text) {
-      // Simple fallback keyword extraction
+      // Simple fallback keyword extraction - filters stop words and question words
       const words = text.toLowerCase().match(/\b\w{3,}\b/g) || [];
       const stopWords = new Set([
          'the',
@@ -184,6 +193,24 @@ class GoogleAIClient {
          'them',
          'well',
          'were',
+         'what',
+         'where',
+         'why',
+         'will',
+         'would',
+         'could',
+         'should',
+         'been',
+         'have',
+         'does',
+         'happen',
+         'about',
+         'into',
+         'than',
+         'that',
+         'this',
+         'with',
+         'from',
       ]);
 
       return words.filter((word) => !stopWords.has(word)).slice(0, 5); // limit to 5 keywords

@@ -195,37 +195,6 @@ Server will run at: **http://localhost:3000**
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```bash
-# === SERVER CONFIGURATION ===
-NODE_ENV=development                    # development | production
-PORT=3000                               # Server port
-
-# === TWITTER API (twitterapi.io) ===
-TWITTERAPI_IO_KEY=your_twitter_api_key  # Required: Get from twitterapi.io
-
-# === GOOGLE AI (Gemini LLM) ===
-GEMINI_API_KEY=your_gemini_api_key      # Required: Get from Google AI Studio
-# Alternative name:
-# GOOGLE_AI_API_KEY=your_gemini_api_key
-
-# === POLYMARKET API ===
-POLYMARKET_API_BASE=https://gamma-api.polymarket.com
-# Default is public API - no key required
-
-# === JWT SECURITY ===
-JWT_SECRET=P0ly_Wh1sp3r2025!.           # Change in production!
-
-# === CORS CONFIGURATION ===
-# Development URLs (comma-separated)
-FRONTEND_DEV_URL=http://localhost:8000,http://localhost:5173,http://localhost:3001
-
-# Production URLs (comma-separated)
-FRONTEND_PROD_URL=https://polywhisper.io,https://www.polywhisper.io
-```
 
 ### Generating API Token for Frontend
 
@@ -792,7 +761,7 @@ sudo apt-get install -y nodejs
 
 # Clone repository
 git clone https://github.com/belimm/poly-sense.git
-cd poly-sense-be
+cd poly-whisper-be
 
 # Install dependencies
 npm ci --production
@@ -1206,7 +1175,7 @@ This project is licensed under the **ISC License**.
 
 **Belimdev**
 - GitHub: [@belimm](https://github.com/belimm)
-- Project: [poly-sense](https://github.com/belimm/poly-sense)
+- Project: [poly-whisper-be](https://github.com/belimm/poly-sense)
 
 ---
 
@@ -1231,7 +1200,7 @@ For questions, issues, or feature requests:
 
 <div align="center">
 
-**Built with ❤️ for PolySense**
+**Built with ❤️ for PolyWhisper**
 
 ⭐ Star this repo if you find it helpful!
 

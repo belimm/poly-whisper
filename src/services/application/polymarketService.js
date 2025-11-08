@@ -21,7 +21,7 @@ class PolymarketService {
   async search(q, { size = this.defaultSize, page = 0 } = {}) {
     if (!q) return { results: [] };
     const fetchFn = await this._getFetch();
-    const url = `${this.baseUrl}/public-search?q=${encodeURIComponent(q)}&size=${encodeURIComponent(size)}&page=${encodeURIComponent(page)}`;
+    const url = `${this.baseUrl}/public-search?q=${encodeURIComponent(q)}&page=${encodeURIComponent(page)}&events_status=active`;
 
     const res = await fetchFn(url, { method: 'GET' });
     if (!res.ok) {

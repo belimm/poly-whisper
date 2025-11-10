@@ -113,6 +113,7 @@ class TwitterWebSocketService extends EventEmitter {
       const author = tweet.author || {};
       return {
          tweetId: tweet.id,
+         userAvatar: author.profilePicture,
          text: tweet.text,
          createdAt: tweet.createdAt,
          authorId: author.id,

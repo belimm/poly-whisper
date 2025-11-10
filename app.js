@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { authenticateApiAccess } from './src/middleware/simpleAuth.js';
+import tweetRoutes from './src/routes/tweetRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
 
 // Create Express app
 const app = express();
@@ -68,27 +70,47 @@ app.get('/', (req, res) => {
         message: 'PolySense Backend API',
         status: 'running',
         version: process.env.npm_package_version || '1.0.0',
-        authentication: 'Simple token-based authentication',
+        authentication: 'Dual authentication (Supabase JWT + Simple Token)',
         endpoints: {
             health: 'GET /health (public)',
-            tweets: {
-                list: 'GET /api/tweets (protected)',
-                latest: 'GET /api/tweets/latest (protected)',
-                analyze: 'GET /api/tweets/analyze (protected)'
+            v2: {
+                tweets: {
+                    list: 'GET /api/v2/tweets (Supabase auth)',
+                    latest: 'GET /api/v2/tweets/latest (Supabase auth)',
+                    withAnalysis: 'GET /api/v2/tweets/with-analysis (Supabase auth)',
+                    search: 'GET /api/v2/tweets/search?q=keyword (Supabase auth)',
+                    statistics: 'GET /api/v2/tweets/statistics (Supabase auth)'
+                },
+                user: {
+                    profile: 'GET/PUT /api/v2/user/profile (Supabase auth)',
+                    interactions: 'GET/POST/DELETE /api/v2/user/interactions (Supabase auth)'
+                }
             },
-            websocket: {
-                connect: 'WS /ws?token=<api_token>',
-                status: 'GET /api/websocket/status (protected)'
+            legacy: {
+                tweets: {
+                    list: 'GET /api/tweets (Simple token)',
+                    latest: 'GET /api/tweets/latest (Simple token)',
+                    analyze: 'GET /api/tweets/analyze (Simple token)'
+                },
+                websocket: {
+                    connect: 'WS /ws?token=<api_token>',
+                    status: 'GET /api/websocket/status (Simple token)'
+                }
             }
         },
         usage: {
-            header: 'x-api-key: <your_token> OR Authorization: Bearer <your_token>',
+            supabaseAuth: 'Authorization: Bearer <supabase_jwt_token>',
+            simpleAuth: 'x-api-key: <your_token> OR Authorization: Bearer <your_token>',
             websocket: 'ws://localhost:3000/ws?token=<your_token>'
         }
     });
 });
 
-// Protected routes middleware
+// Register new Supabase-authenticated routes (v2)
+app.use('/api/v2/tweets', tweetRoutes);
+app.use('/api/v2/user', userRoutes);
+
+// Protected routes middleware (legacy simple token auth)
 app.use('/api/tweets', authenticateApiAccess);
 app.use('/api/websocket', authenticateApiAccess);
 

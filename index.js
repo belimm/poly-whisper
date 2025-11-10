@@ -7,6 +7,9 @@ import TweetPipeline from './src/services/application/tweetPipeline.js';
 import TweetAnalyzer from './src/domain/tweetAnalyzer.js';
 import PolymarketService from './src/services/application/polymarketService.js';
 import { SimpleTokenAuth } from './src/middleware/simpleAuth.js';
+import TweetDatabaseService from './src/services/database/tweetDatabaseService.js';
+import tweetRoutes from './src/routes/tweetRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +30,7 @@ const twitterWS = new TwitterWebSocketService();
 const clientWS = new ClientWebSocketService();
 const tweetAnalyzer = new TweetAnalyzer();
 const polymarketService = new PolymarketService();
+const tweetDB = new TweetDatabaseService();
 
 // Inject services and data into app locals for use in routes
 app.locals.tweets = tweets;
@@ -34,6 +38,11 @@ app.locals.twitterWS = twitterWS;
 app.locals.clientWS = clientWS;
 app.locals.tweetAnalyzer = tweetAnalyzer;
 app.locals.polymarketService = polymarketService;
+app.locals.tweetDB = tweetDB;
+
+// Register new routes with Supabase authentication
+app.use('/api/v2/tweets', tweetRoutes);
+app.use('/api/v2/user', userRoutes);
 
 // Create WebSocket server for frontend clients
 clientWS.createServer(server);
@@ -54,13 +63,35 @@ twitterWS.on('handshake', () => {
 
 // Use a processing pipeline to analyze tweets and enrich with Polymarket results
 const tweetPipeline = new TweetPipeline(twitterWS);
-tweetPipeline.on('enrichedTweet', (enriched) => {
+tweetPipeline.on('enrichedTweet', async (enriched) => {
    console.log('📧 ENRICHED TWEET:', enriched);
 
    // Store enriched tweet (with rotation to prevent memory overflow)
    tweets.unshift(enriched);
    if (tweets.length > MAX_TWEETS_STORED) {
       tweets.pop();
+   }
+
+   // Save to database if Supabase is configured
+   if (tweetDB) {
+      try {
+         // Insert enriched tweet (with tweetDetails, analysis, polymarketMatches)
+         const dbTweet = await tweetDB.insertTweet(enriched);
+
+         // Insert analysis if available
+         if (enriched.analysis && dbTweet) {
+            await tweetDB.insertAnalysis(dbTweet.id, enriched.analysis);
+         }
+
+         // Insert Polymarket matches if available
+         if (enriched.polymarketMatches && enriched.polymarketMatches.length > 0 && dbTweet) {
+            await tweetDB.insertPolymarketMatches(dbTweet.id, enriched.polymarketMatches);
+         }
+
+         console.log('✅ Tweet saved to database:', dbTweet.id);
+      } catch (dbError) {
+         console.error('❌ Failed to save tweet to database:', dbError.message);
+      }
    }
 
    // Broadcast to frontend clients

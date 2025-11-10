@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { EventEmitter } from 'events';
 import { authenticateWebSocketSimple } from '../../middleware/simpleAuth.js';
+import { authenticateWebSocketConnection } from '../../middleware/supabaseAuth.js';
 
 class ClientWebSocketService extends EventEmitter {
     constructor() {
@@ -27,11 +28,31 @@ class ClientWebSocketService extends EventEmitter {
             }
         });
 
-        this.wss.on('connection', (ws, req) => {
+        this.wss.on('connection', async (ws, req) => {
             try {
-                // Authenticate the client
-                const auth = authenticateWebSocketSimple(ws, req);
-                
+                // Extract token from URL
+                const url = new URL(req.url, `http://${req.headers.host}`);
+                const token = url.searchParams.get('token');
+
+                let auth;
+
+                // Try Supabase authentication first
+                try {
+                    const supabaseAuth = await authenticateWebSocketConnection(token);
+                    auth = {
+                        client: supabaseAuth.user.email || supabaseAuth.user.id,
+                        type: 'supabase',
+                        userId: supabaseAuth.user.id,
+                        user: supabaseAuth.user
+                    };
+                    console.log('✅ Supabase authentication successful');
+                } catch (supabaseError) {
+                    // Fall back to simple token authentication
+                    console.log('⚠️  Supabase auth failed, trying simple token:', supabaseError.message);
+                    const simpleAuth = authenticateWebSocketSimple(ws, req);
+                    auth = simpleAuth;
+                }
+
                 // Store client with auth info
                 const clientId = `${auth.client}_${Date.now()}`;
                 this.clients.set(clientId, {
@@ -49,6 +70,7 @@ class ClientWebSocketService extends EventEmitter {
                     message: 'Connected to PolySense WebSocket',
                     client: auth.client,
                     authType: auth.type,
+                    userId: auth.userId || null,
                     timestamp: new Date().toISOString()
                 }));
 

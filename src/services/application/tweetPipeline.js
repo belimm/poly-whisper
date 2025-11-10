@@ -53,8 +53,7 @@ class TweetPipeline extends EventEmitter {
       }
 
       const enriched = {
-         original: tweet,
-         text,
+         tweetDetails: tweet,
          analysis,
          polymarketMatches: markets,
          enrichedAt: new Date().toISOString(),

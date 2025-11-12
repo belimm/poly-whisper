@@ -115,6 +115,8 @@ class TweetDatabaseService {
             .from('tweets_with_analysis')
             .select('*', { count: 'exact' })
             .range(offset, offset + limit - 1);
+            
+            
 
         if (error) throw error;
 
@@ -125,6 +127,8 @@ class TweetDatabaseService {
             polymarketMatches: row.polymarket_matches || [],
             enrichedAt: row.enriched_at
         }));
+
+        console.log(enrichedTweets);
 
         return { data: enrichedTweets, total: count };
     }

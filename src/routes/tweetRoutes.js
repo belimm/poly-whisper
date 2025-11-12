@@ -13,6 +13,8 @@ router.use(authenticateSupabaseUser);
  * Get tweets with pagination
  * Query params: limit (default: 10), offset (default: 0)
  */
+
+/*/api/v2/tweets?limit=10 */
 router.get('/', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
@@ -45,6 +47,7 @@ router.get('/', async (req, res) => {
  * Get latest tweets (shorthand)
  * Query params: count (default: 10)
  */
+
 router.get('/latest', async (req, res) => {
     try {
         const count = parseInt(req.query.count) || 10;
@@ -77,10 +80,10 @@ router.get('/with-analysis', async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const offset = parseInt(req.query.offset) || 0;
 
-        const { tweets, total } = await tweetDB.getTweetsWithAnalyses(limit, offset);
+        const { data, total } = await tweetDB.getTweetsWithAnalyses(limit, offset);
 
         res.json({
-            tweets,
+            tweets: data,
             total,
             limit,
             offset,

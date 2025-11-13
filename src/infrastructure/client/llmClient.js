@@ -218,6 +218,7 @@ class GoogleAIClient {
          'this',
          'with',
          'from',
+         'let'
       ]);
 
       return words.filter((word) => !stopWords.has(word)).slice(0, 5); // limit to 5 keywords

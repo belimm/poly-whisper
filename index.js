@@ -7,6 +7,7 @@ import TweetPipeline from './src/services/application/tweetPipeline.js';
 import TweetAnalyzer from './src/domain/tweetAnalyzer.js';
 import PolymarketService from './src/services/application/polymarketService.js';
 import TweetDatabaseService from './src/services/database/tweetDatabaseService.js';
+import TweetProcessingQueue from './src/services/application/tweetProcessingQueue.js';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import { devLog, errorLog, infoLog } from './src/utils/logger.js';
@@ -40,6 +41,14 @@ const tweetAnalyzer = new TweetAnalyzer();
 const polymarketService = new PolymarketService();
 const tweetDB = new TweetDatabaseService();
 
+// Initialize tweet processing queue with concurrency control
+const tweetQueue = new TweetProcessingQueue({
+   tweetDB,
+   clientWS,
+   concurrency: 2, // Max 2 tweets processed simultaneously
+   maxQueueSize: 100, // Max 100 tweets in queue before rejecting
+});
+
 // Inject services and data into app locals for use in routes
 app.locals.tweets = tweets;
 app.locals.twitterWS = twitterWS;
@@ -47,10 +56,37 @@ app.locals.clientWS = clientWS;
 app.locals.tweetAnalyzer = tweetAnalyzer;
 app.locals.polymarketService = polymarketService;
 app.locals.tweetDB = tweetDB;
+app.locals.tweetQueue = tweetQueue;
 
 // Register new routes with Supabase authentication
 app.use('/api/v2/tweets', tweetRoutes);
 app.use('/api/v2/user', userRoutes);
+
+// // Queue monitoring endpoints (public for monitoring)
+// app.get('/api/queue-stats', (req, res) => {
+//    res.json({
+//       queue: tweetQueue.getStats(),
+//       timestamp: new Date().toISOString(),
+//    });
+// });
+
+// // Endpoint to adjust queue concurrency on the fly
+// app.post('/api/queue-concurrency', (req, res) => {
+//    const { concurrency } = req.body;
+
+//    if (!concurrency || concurrency < 1 || concurrency > 10) {
+//       return res.status(400).json({
+//          error: 'Invalid concurrency value',
+//          message: 'Concurrency must be between 1 and 10',
+//       });
+//    }
+
+//    tweetQueue.setConcurrency(concurrency);
+//    res.json({
+//       message: `Queue concurrency updated to ${concurrency}`,
+//       stats: tweetQueue.getStats(),
+//    });
+// });
 
 // Create WebSocket server for frontend clients
 clientWS.createServer(server);
@@ -71,39 +107,27 @@ twitterWS.on('handshake', () => {
 
 // Use a processing pipeline to analyze tweets and enrich with Polymarket results
 const tweetPipeline = new TweetPipeline(twitterWS);
-tweetPipeline.on('enrichedTweet', async (enriched) => {
-   devLog('📧 ENRICHED TWEET:', enriched);
+tweetPipeline.on('enrichedTweet', (enriched) => {
+   devLog('📧 ENRICHED TWEET received:', enriched.tweetDetails?.tweetId);
 
-   // Store enriched tweet (with rotation to prevent memory overflow)
+   // Store enriched tweet in memory (with rotation to prevent memory overflow)
    tweets.unshift(enriched);
    if (tweets.length > MAX_TWEETS_STORED) {
       tweets.pop();
    }
 
-   // Save to database if Supabase is configured
-   if (tweetDB) {
-      try {
-         // Insert enriched tweet (with tweetDetails, analysis, polymarketMatches)
-         const dbTweet = await tweetDB.insertTweet(enriched);
-
-         // Insert analysis if available
-         if (enriched.analysis && dbTweet) {
-            await tweetDB.insertAnalysis(dbTweet.id, enriched.analysis);
-         }
-
-         // Insert Polymarket matches if available
-         if (enriched.polymarketMatches && enriched.polymarketMatches.length > 0 && dbTweet) {
-            await tweetDB.insertPolymarketMatches(dbTweet.id, enriched.polymarketMatches);
-         }
-
-         devLog('✅ Tweet saved to database:', dbTweet.id);
-      } catch (dbError) {
-         errorLog('❌ Failed to save tweet to database:', dbError.message);
-      }
-   }
-
-   // Broadcast to frontend clients
+   // Broadcast to frontend clients immediately (don't wait for database)
    clientWS.broadcastTweet(enriched);
+
+   // Add to processing queue for database persistence
+   // The queue ensures controlled concurrency to avoid API rate limits and DB connection pool issues
+   const queued = tweetQueue.addTweet(enriched);
+
+   if (!queued) {
+      errorLog(
+         `⚠️ Tweet ${enriched.tweetDetails?.tweetId} could not be queued - queue is full`
+      );
+   }
 });
 tweetPipeline.on('error', (err) => {
    errorLog('Tweet pipeline error:', err);
@@ -163,20 +187,44 @@ server.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
    infoLog('🛑 SIGTERM received, shutting down gracefully');
-   clientWS.close();
-   twitterWS.disconnect();
+   infoLog('⏳ Draining tweet processing queue...');
+
+   try {
+      // Stop accepting new tweets
+      twitterWS.disconnect();
+      clientWS.close();
+
+      // Wait for queue to finish processing pending tweets
+      await tweetQueue.drain();
+      infoLog('✅ Tweet processing queue drained');
+   } catch (error) {
+      errorLog('❌ Error during shutdown:', error.message);
+   }
+
    server.close(() => {
       infoLog('✅ Server closed');
       process.exit(0);
    });
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
    infoLog('🛑 SIGINT received, shutting down gracefully');
-   clientWS.close();
-   twitterWS.disconnect();
+   infoLog('⏳ Draining tweet processing queue...');
+
+   try {
+      // Stop accepting new tweets
+      twitterWS.disconnect();
+      clientWS.close();
+
+      // Wait for queue to finish processing pending tweets
+      await tweetQueue.drain();
+      infoLog('✅ Tweet processing queue drained');
+   } catch (error) {
+      errorLog('❌ Error during shutdown:', error.message);
+   }
+
    server.close(() => {
       infoLog('✅ Server closed');
       process.exit(0);

@@ -32,6 +32,18 @@ class TweetPipeline extends EventEmitter {
    }
 
    async _handleTweet(tweet) {
+      // Skip replies and retweets - only process original tweets
+      if (tweet.isReply) {
+         console.log('⏭️  Skipping reply tweet from @' + tweet.authorUsername);
+         return;
+      }
+
+      if (tweet.isRetweet) {
+         console.log('⏭️  Skipping retweet from @' + tweet.authorUsername);
+         return;
+      }
+
+      console.log('✅ Processing original tweet from @' + tweet.authorUsername);
       const text = tweet?.text || tweet?.message || JSON.stringify(tweet);
       const analysis = this.analyzer.analyzeTweet(text);
 

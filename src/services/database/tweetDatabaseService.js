@@ -22,27 +22,28 @@ class TweetDatabaseService {
         const tweetDetails = enrichedTweet.tweetDetails || enrichedTweet;
 
         const { data, error } = await this.supabase
-            .from('tweets')
-            .insert([{
-                tweet_id: tweetDetails.tweetId,
-                author_id: tweetDetails.authorId,
-                author_username: tweetDetails.authorUsername,
-                author_name: tweetDetails.authorName,
-                user_avatar: tweetDetails.userAvatar,
-                text: tweetDetails.text,
-                created_at: tweetDetails.createdAt || new Date().toISOString(),
-                like_count: tweetDetails.likeCount || 0,
-                retweet_count: tweetDetails.retweetCount || 0,
-                reply_count: tweetDetails.replyCount || 0,
-                url: tweetDetails.url,
-                rule_id: tweetDetails.ruleId,
-                rule_tag: tweetDetails.ruleTag,
-                received_at_ms: tweetDetails.receivedAtMs,
-                enriched_at: enrichedTweet.enrichedAt || new Date().toISOString(),
-                raw_data: enrichedTweet
-            }])
-            .select()
-            .single();
+           .from('tweets')
+           .insert([
+              {
+                 tweet_id: tweetDetails.tweetId,
+                 author_id: tweetDetails.authorId,
+                 author_username: tweetDetails.authorUsername,
+                 author_name: tweetDetails.authorName,
+                 author_avatar_url: tweetDetails.authorAvatarURL,
+                 text: tweetDetails.text,
+                 created_at: tweetDetails.createdAt || new Date().toISOString(),
+                 like_count: tweetDetails.likeCount || 0,
+                 retweet_count: tweetDetails.retweetCount || 0,
+                 reply_count: tweetDetails.replyCount || 0,
+                 url: tweetDetails.url,
+                 received_at_ms: tweetDetails.receivedAtMs,
+                 enriched_at:
+                    enrichedTweet.enrichedAt || new Date().toISOString(),
+                 raw_data: enrichedTweet,
+              },
+           ])
+           .select()
+           .single();
 
         if (error) {
             // If it's a duplicate, return the existing tweet

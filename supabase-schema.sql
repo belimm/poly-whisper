@@ -21,15 +21,13 @@ CREATE TABLE IF NOT EXISTS public.tweets (
     author_id TEXT, -- tweetDetails.authorId
     author_username TEXT, -- tweetDetails.authorUsername
     author_name TEXT, -- tweetDetails.authorName
-    user_avatar TEXT, -- tweetDetails.userAvatar
+    author_avatar_url TEXT, -- tweetDetails.authorAvatar
     text TEXT NOT NULL, -- tweetDetails.text
     created_at TIMESTAMPTZ NOT NULL, -- tweetDetails.createdAt
     like_count INTEGER DEFAULT 0, -- tweetDetails.likeCount
     retweet_count INTEGER DEFAULT 0, -- tweetDetails.retweetCount
     reply_count INTEGER DEFAULT 0, -- tweetDetails.replyCount
     url TEXT, -- tweetDetails.url
-    rule_id TEXT, -- tweetDetails.ruleId
-    rule_tag TEXT, -- tweetDetails.ruleTag
     received_at_ms BIGINT, -- tweetDetails.receivedAtMs
     enriched_at TIMESTAMPTZ, -- enrichedAt timestamp
     raw_data JSONB, -- Store complete enriched object
@@ -173,15 +171,13 @@ SELECT
         'authorId', t.author_id,
         'authorUsername', t.author_username,
         'authorName', t.author_name,
-        'userAvatar', t.user_avatar,
+        'authorAvatarURL', t.author_avatar_url,
         'text', t.text,
         'createdAt', t.created_at,
         'likeCount', t.like_count,
         'retweetCount', t.retweet_count,
         'replyCount', t.reply_count,
         'url', t.url,
-        'ruleId', t.rule_id,
-        'ruleTag', t.rule_tag,
         'receivedAtMs', t.received_at_ms
     ) as tweet_details,
     jsonb_build_object(

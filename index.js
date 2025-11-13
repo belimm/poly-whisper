@@ -9,9 +9,18 @@ import PolymarketService from './src/services/application/polymarketService.js';
 import TweetDatabaseService from './src/services/database/tweetDatabaseService.js';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import { devLog, errorLog, infoLog } from './src/utils/logger.js';
 
 // Load environment variables
 dotenv.config();
+
+import {
+   buildRestUrl,
+   buildWebSocketUrl,
+   isDev,
+} from './src/utils/urlBuilder.js';
+
+
 
 // Setup CORS after environment is loaded
 setupCors();
@@ -48,7 +57,7 @@ clientWS.createServer(server);
 
 // WebSocket event handlers
 twitterWS.on('connected', () => {
-   console.log('✅ Twitter WebSocket service connected');
+   devLog('✅ Twitter WebSocket service connected');
    clientWS.broadcastSystemMessage(
       'Twitter WebSocket connected - listening for tweets',
       'info'
@@ -56,14 +65,14 @@ twitterWS.on('connected', () => {
 });
 
 twitterWS.on('handshake', () => {
-   console.log('✅ Twitter API handshake completed');
+   devLog('✅ Twitter API handshake completed');
    clientWS.broadcastSystemMessage('Twitter API handshake completed', 'info');
 });
 
 // Use a processing pipeline to analyze tweets and enrich with Polymarket results
 const tweetPipeline = new TweetPipeline(twitterWS);
 tweetPipeline.on('enrichedTweet', async (enriched) => {
-   console.log('📧 ENRICHED TWEET:', enriched);
+   devLog('📧 ENRICHED TWEET:', enriched);
 
    // Store enriched tweet (with rotation to prevent memory overflow)
    tweets.unshift(enriched);
@@ -87,9 +96,9 @@ tweetPipeline.on('enrichedTweet', async (enriched) => {
             await tweetDB.insertPolymarketMatches(dbTweet.id, enriched.polymarketMatches);
          }
 
-         console.log('✅ Tweet saved to database:', dbTweet.id);
+         devLog('✅ Tweet saved to database:', dbTweet.id);
       } catch (dbError) {
-         console.error('❌ Failed to save tweet to database:', dbError.message);
+         errorLog('❌ Failed to save tweet to database:', dbError.message);
       }
    }
 
@@ -97,7 +106,7 @@ tweetPipeline.on('enrichedTweet', async (enriched) => {
    clientWS.broadcastTweet(enriched);
 });
 tweetPipeline.on('error', (err) => {
-   console.error('Tweet pipeline error:', err);
+   errorLog('Tweet pipeline error:', err);
    clientWS.broadcastSystemMessage(
       `Tweet pipeline error: ${err.message}`,
       'error'
@@ -105,7 +114,7 @@ tweetPipeline.on('error', (err) => {
 });
 
 twitterWS.on('disconnected', ({ code, reason }) => {
-   console.log('❌ Twitter WebSocket disconnected:', code, reason);
+   devLog('❌ Twitter WebSocket disconnected:', code, reason);
    clientWS.broadcastSystemMessage(
       `Twitter WebSocket disconnected: ${reason}`,
       'warning'
@@ -113,7 +122,7 @@ twitterWS.on('disconnected', ({ code, reason }) => {
 });
 
 twitterWS.on('error', (error) => {
-   console.error('❌ Twitter WebSocket error:', error);
+   errorLog('❌ Twitter WebSocket error:', error);
    clientWS.broadcastSystemMessage(
       `Twitter WebSocket error: ${error.message}`,
       'error'
@@ -121,7 +130,7 @@ twitterWS.on('error', (error) => {
 });
 
 twitterWS.on('maxReconnectAttemptsReached', () => {
-   console.error(
+   errorLog(
       '❌ Max reconnection attempts reached. Manual intervention required.'
    );
    clientWS.broadcastSystemMessage(
@@ -132,18 +141,22 @@ twitterWS.on('maxReconnectAttemptsReached', () => {
 
 // Start the server
 server.listen(PORT, () => {
-   console.log(`🚀 PolySense Backend server running on port ${PORT}`);
-   console.log(`📊 Health check: http://localhost:${PORT}/health`);
-   console.log(`🔐 Authentication: Simple token-based`);
-   console.log(`🐦 Tweet endpoints: http://localhost:${PORT}/api/tweets/`);
-   console.log(
-      `🔌 WebSocket endpoint: ws://localhost:${PORT}/ws?token=<api_token>`
-   );
-   console.log(`\n🌐 Frontend should run on: http://localhost:8000`);
-   console.log(`📡 Frontend WebSocket connection: ws://localhost:${PORT}/ws`);
+   const healthCheckUrl = buildRestUrl('/health', PORT);
+   const tweetEndpointUrl = buildRestUrl('/api/tweets/', PORT);
+   const wsEndpointUrl = buildWebSocketUrl('/ws', PORT);
 
-  
-   
+   if (isDev()) {
+      console.log(`🚀 PolySense Backend server running on port ${PORT}`);
+      console.log(`📊 Health check: ${healthCheckUrl}`);
+      console.log(`🔐 Authentication: Simple token-based`);
+      console.log(`🐦 Tweet endpoints: ${tweetEndpointUrl}`);
+      console.log(`🔌 WebSocket endpoint: ${wsEndpointUrl}?token=<api_token>`);
+      console.log(`\n🌐 Frontend should run on: http://localhost:5173`);
+      console.log(`📡 Frontend WebSocket connection: ${wsEndpointUrl}`);
+   } else {
+      console.log(`🚀 Server running in PRODUCTION mode`);
+      console.log(`📊 Domain: ${process.env.PROD_DOMAIN}`);
+   }
 
    // Connect to Twitter WebSocket
    twitterWS.connect();
@@ -151,21 +164,21 @@ server.listen(PORT, () => {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-   console.log('🛑 SIGTERM received, shutting down gracefully');
+   infoLog('🛑 SIGTERM received, shutting down gracefully');
    clientWS.close();
    twitterWS.disconnect();
    server.close(() => {
-      console.log('✅ Server closed');
+      infoLog('✅ Server closed');
       process.exit(0);
    });
 });
 
 process.on('SIGINT', () => {
-   console.log('🛑 SIGINT received, shutting down gracefully');
+   infoLog('🛑 SIGINT received, shutting down gracefully');
    clientWS.close();
    twitterWS.disconnect();
    server.close(() => {
-      console.log('✅ Server closed');
+      infoLog('✅ Server closed');
       process.exit(0);
    });
 });

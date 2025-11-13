@@ -550,8 +550,6 @@ interface EnrichedTweet {
     retweetCount: number;
     replyCount: number;
     url: string;
-    ruleId: string;
-    ruleTag: string;
     receivedAtMs: number;
   };
   analysis: {

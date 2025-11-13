@@ -111,22 +111,21 @@ class TwitterWebSocketService extends EventEmitter {
 
    normalizeTweet(tweet, originalMessage) {
       const author = tweet.author || {};
+      const userName = author.userName;
       return {
          tweetId: tweet.id,
-         userAvatar: author.profilePicture,
          text: tweet.text,
          createdAt: tweet.createdAt,
          authorId: author.id,
-         authorUsername: author.username,
+         authorUsername: userName,
          authorName: author.name,
+         authorAvatarURL: author.profilePicture,
+         isRetweet: tweet.retweeted_tweet ? true : false,
+         isReply: tweet.isReply ? true : false,
          likeCount: tweet.likeCount,
          retweetCount: tweet.retweetCount,
          replyCount: tweet.replyCount,
-         url: author.username
-            ? `https://x.com/${author.username}/status/${tweet.id}`
-            : undefined,
-         ruleId: originalMessage.rule_id,
-         ruleTag: originalMessage.rule_tag,
+         url: author.twitterUrl,
          receivedAtMs: originalMessage.timestamp,
       };
    }

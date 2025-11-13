@@ -45,7 +45,8 @@ class TweetPipeline extends EventEmitter {
 
       console.log('✅ Processing original tweet from @' + tweet.authorUsername);
       const text = tweet?.text || tweet?.message || JSON.stringify(tweet);
-      const analysis = this.analyzer.analyzeTweet(text);
+      // Try LLM analysis first, falls back to heuristics if LLM unavailable or fails
+      const analysis = await this.analyzer.analyzeWithLLM(text);
 
       const markets = [];
 

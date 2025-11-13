@@ -118,6 +118,8 @@ export default class TweetAnalyzer {
             keywords: Array.from(new Set(allKeywords)).slice(0, 10), // limit to 10 most relevant
             categories: Array.from(new Set(allCategories)),
             sentiment: llmResult.sentiment || 'neutral',
+            sentimentScore: llmResult.sentiment_score || 0.5,
+            summary: llmResult.summary || 'Tweet analysis completed',
             confidence: llmResult.confidence || 0.5,
             entities: {
                financial_instruments: llmResult.financial_instruments || [],
@@ -140,6 +142,8 @@ export default class TweetAnalyzer {
          return {
             ...fallback,
             sentiment: 'neutral',
+            sentimentScore: 0.5,
+            summary: 'LLM analysis failed, using heuristic fallback',
             confidence: 0.1,
             error: error.message,
             source: 'heuristic-fallback',

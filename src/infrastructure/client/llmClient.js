@@ -78,7 +78,8 @@ class GoogleAIClient {
   - **Betting Keywords**: 2-4 word phrases that describe prediction market topics
     * Examples: "turkey election", "bitcoin price", "apple earnings", "world cup winner"
     * NOT: "when", "will", "happen", "what", "is"
-  - **Sentiment**: positive/negative/neutral
+  - **Sentiment**: positive/negative/neutral with a confidence score (0.0-1.0)
+  - **Summary**: A brief 1-2 sentence summary of the key prediction market relevance
   - **Categories**: crypto, sports, politics, finance, entertainment, tech, etc.
 
   Tweet: "${tweetText}"
@@ -89,8 +90,10 @@ class GoogleAIClient {
     "key_entities": ["Elon Musk", "Turkey", "Apple"],
     "market_events": ["turkey election", "iphone launch"],
     "sentiment": "positive|negative|neutral",
+    "sentiment_score": 0.85,
     "betting_keywords": ["turkey election", "bitcoin price"],
     "categories": ["politics", "crypto"],
+    "summary": "Brief 1-2 sentence summary of prediction market relevance",
     "confidence": 0.95,
     "reasoning": "Brief explanation"
   }`;
@@ -112,8 +115,10 @@ class GoogleAIClient {
             key_entities: [],
             market_events: [],
             sentiment: 'neutral',
+            sentiment_score: 0.5,
             betting_keywords: this._extractFallbackKeywords(tweetText),
             categories: [],
+            summary: 'Unable to generate summary - LLM parsing failed',
             confidence: 0.1,
             reasoning: 'Failed to parse LLM response, using fallback',
             raw_response: response,
@@ -127,8 +132,10 @@ class GoogleAIClient {
             key_entities: [],
             market_events: [],
             sentiment: 'neutral',
+            sentiment_score: 0.5,
             betting_keywords: this._extractFallbackKeywords(tweetText),
             categories: [],
+            summary: 'Unable to generate summary - LLM service unavailable',
             confidence: 0.0,
             reasoning: `LLM analysis failed: ${error.message}`,
             error: error.message,

@@ -29,9 +29,13 @@ export default class TweetAnalyzer {
       if (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY) {
          try {
             this.llmClient = new GoogleAIClient(options.llmOptions || {});
+            console.log('✅ LLM client initialized successfully');
          } catch (error) {
-            console.warn('LLM client initialization failed:', error.message);
+            console.error('❌ LLM client initialization failed:', error.message);
+            console.error('Stack:', error.stack);
          }
+      } else {
+         console.warn('⚠️  LLM API keys not found in environment variables. Set GEMINI_API_KEY or GOOGLE_AI_API_KEY to enable LLM-based analysis');
       }
    }
 

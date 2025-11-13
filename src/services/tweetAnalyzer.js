@@ -2,7 +2,7 @@
 // Lightweight tweet analyzer: heuristics for extracting keywords and categories.
 // Now includes LLM-based analysis using Fireworks AI.
 
-import FireworksAIClient from '../infrastructure/client/llmClient.js';
+import GoogleAIClient from '../infrastructure/client/llmClient.js';
 
 export default class TweetAnalyzer {
    constructor(options = {}) {
@@ -26,13 +26,13 @@ export default class TweetAnalyzer {
 
       // Initialize LLM client if API key is available
       this.llmClient = null;
-      if (process.env.FIREWORKS_API_KEY) {
+      
          try {
-            this.llmClient = new FireworksAIClient(options.llmOptions || {});
+            this.llmClient = new GoogleAIClient(options.llmOptions || {});
          } catch (error) {
             console.warn('LLM client initialization failed:', error.message);
          }
-      }
+      
    }
 
    // Synchronous lightweight analyzer that returns keywords + categories

@@ -6,7 +6,6 @@ import ClientWebSocketService from './src/infrastructure/websocket/clientWebSock
 import TweetPipeline from './src/services/application/tweetPipeline.js';
 import TweetAnalyzer from './src/domain/tweetAnalyzer.js';
 import PolymarketService from './src/services/application/polymarketService.js';
-import { SimpleTokenAuth } from './src/middleware/simpleAuth.js';
 import TweetDatabaseService from './src/services/database/tweetDatabaseService.js';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
@@ -143,24 +142,8 @@ server.listen(PORT, () => {
    console.log(`\n🌐 Frontend should run on: http://localhost:8000`);
    console.log(`📡 Frontend WebSocket connection: ws://localhost:${PORT}/ws`);
 
-   // Generate and display a frontend token
-   const frontendToken = SimpleTokenAuth.generateApiToken('polysense-frontend');
-   console.log('\n🎫 Frontend Token (save this for your frontend):');
-   console.log('   Token:', frontendToken);
-   console.log('\n📋 Frontend Usage:');
-   console.log('   HTTP Header: x-api-key:', frontendToken);
-   console.log('   OR Authorization: Bearer', frontendToken);
-   console.log(
-      '   WebSocket: ws://localhost:' + PORT + '/ws?token=' + frontendToken
-   );
-   console.log('\n💾 Store this token in your frontend .env file as:');
-   console.log('   VITE_API_TOKEN=' + frontendToken);
-   console.log('   VITE_API_URL=http://localhost:' + PORT);
-   console.log('   VITE_WS_URL=ws://localhost:' + PORT);
-   console.log('   # or for React:');
-   console.log('   # REACT_APP_API_TOKEN=' + frontendToken);
-   console.log('   # REACT_APP_API_URL=http://localhost:' + PORT);
-   console.log('   # REACT_APP_WS_URL=ws://localhost:' + PORT);
+  
+   
 
    // Connect to Twitter WebSocket
    twitterWS.connect();

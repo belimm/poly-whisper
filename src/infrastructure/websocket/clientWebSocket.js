@@ -1,6 +1,5 @@
 import { WebSocketServer } from 'ws';
 import { EventEmitter } from 'events';
-import { authenticateWebSocketSimple } from '../../middleware/simpleAuth.js';
 import { authenticateWebSocketConnection } from '../../middleware/supabaseAuth.js';
 
 class ClientWebSocketService extends EventEmitter {
@@ -49,8 +48,7 @@ class ClientWebSocketService extends EventEmitter {
                 } catch (supabaseError) {
                     // Fall back to simple token authentication
                     console.log('⚠️  Supabase auth failed, trying simple token:', supabaseError.message);
-                    const simpleAuth = authenticateWebSocketSimple(ws, req);
-                    auth = simpleAuth;
+                   
                 }
 
                 // Store client with auth info

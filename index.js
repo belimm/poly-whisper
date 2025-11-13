@@ -1,6 +1,6 @@
 import { createServer } from 'http';
 import dotenv from 'dotenv';
-import app, { setupCors } from './app.js';
+import app from './app.js';
 import TwitterWebSocketService from './src/infrastructure/websocket/twitterWebSocket.js';
 import ClientWebSocketService from './src/infrastructure/websocket/clientWebSocket.js';
 import TweetPipeline from './src/services/application/tweetPipeline.js';
@@ -23,8 +23,7 @@ import {
 
 
 
-// Setup CORS after environment is loaded
-setupCors();
+
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -59,8 +58,8 @@ app.locals.tweetDB = tweetDB;
 app.locals.tweetQueue = tweetQueue;
 
 // Register new routes with Supabase authentication
-app.use('/api/v2/tweets', tweetRoutes);
-app.use('/api/v2/user', userRoutes);
+app.use('/api/tweets', tweetRoutes);
+app.use('/api/user', userRoutes);
 
 // // Queue monitoring endpoints (public for monitoring)
 // app.get('/api/queue-stats', (req, res) => {

@@ -3,9 +3,20 @@ import cors from 'cors';
 import helmet from 'helmet';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
-
+import {getFrontendUrl} from './src/utils/util.js';
 // Create Express app
 const app = express();
+
+app.use(
+   cors({
+      origin: getFrontendUrl(),
+      credentials: true, // Allow cookies/auth headers
+      optionsSuccessStatus: 200,
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Custom-Header'], // Specify your headers
+      exposedHeaders: ['X-Custom-Response-Header'], // Headers client can read
+   })
+);
+
 
 // Security middleware
 app.use(
@@ -23,41 +34,7 @@ app.use(
    })
 );
 
-// CORS configuration function - will be called after env is loaded
-export const setupCors = () => {
-   const getFrontendUrl = () => {
-      if (
-         process.env.NODE_ENV === 'DEV' ||
-         process.env.NODE_ENV === 'development'
-      ) {
-         return (
-            process.env.FRONTEND_DEV_URL?.split(',') || [
-               'http://localhost:8000',
-               'http://localhost:5173',
-            ]
-         );
-      } else {
-         return (
-            process.env.FRONTEND_PROD_URL?.split(',') || [
-               'http://polywhisper.io',
-            ]
-         );
-      }
-   };
 
-   const allowedOrigins = getFrontendUrl();
-   console.log(
-      `🌐 CORS Origins (${process.env.NODE_ENV || 'undefined'}):`,
-      allowedOrigins
-   );
-
-   const corsOptions = {
-      origin: allowedOrigins,
-      credentials: true,
-      optionsSuccessStatus: 200,
-   };
-   app.use(cors(corsOptions));
-};
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -117,8 +94,8 @@ app.get('/', (req, res) => {
 });
 
 // Register new Supabase-authenticated routes (v2)
-app.use('/api/v2/tweets', tweetRoutes);
-app.use('/api/v2/user', userRoutes);
+app.use('/api/tweets', tweetRoutes);
+app.use('/api/user', userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

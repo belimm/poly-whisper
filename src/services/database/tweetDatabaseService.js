@@ -134,6 +134,75 @@ class TweetDatabaseService {
     }
 
     /**
+     * Get a specific tweet with its analysis by Twitter ID or database ID
+     * @param {string} tweetId - Twitter tweet ID (text) or database ID (UUID)
+     * @returns {Promise<object>} Tweet with analysis in enriched format
+     */
+    async getTweetWithAnalysisById(tweetId) {
+        if (!this.supabase) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        // First, try to fetch by Twitter tweet_id, fallback to database id
+        let tweetQuery = this.supabase
+            .from('tweets')
+            .select('id, tweet_id, raw_data, enriched_at');
+
+        // Determine if input looks like a UUID (contains hyphens) or Twitter ID (numeric string)
+        const isUUID = tweetId.includes('-');
+
+        if (isUUID) {
+            tweetQuery = tweetQuery.eq('id', tweetId);
+        } else {
+            tweetQuery = tweetQuery.eq('tweet_id', tweetId);
+        }
+
+        const { data: tweetData, error: tweetError } = await tweetQuery.single();
+
+        if (tweetError) {
+            if (tweetError.code === 'PGRST116') {
+                throw new Error('Tweet not found');
+            }
+            throw tweetError;
+        }
+
+        // Now fetch the analysis for this tweet
+        const { data: analysisData, error: analysisError } = await this.supabase
+            .from('tweet_analyses')
+            .select('*')
+            .eq('tweet_id', tweetData.id)
+            .eq('analysis_type', 'sentiment')
+            .single();
+
+        if (analysisError && analysisError.code !== 'PGRST116') {
+            throw analysisError;
+        }
+
+        // Extract tweetDetails from raw_data or construct it
+        const tweetDetails = tweetData.raw_data?.tweetDetails || {
+            tweetId: tweetData.tweet_id
+        };
+
+        // Transform to enriched format
+        return {
+            id: tweetData.tweet_id,
+            tweetDetails,
+            analysis: analysisData ? {
+                sentiment: analysisData.sentiment,
+                sentimentScore: analysisData.sentiment_score,
+                keywords: analysisData.keywords || [],
+                categories: analysisData.categories || [],
+                summary: analysisData.summary
+            } : {
+                categories: [],
+                keywords: [],
+                summary: null
+            },
+            enrichedAt: tweetData.enriched_at
+        };
+    }
+
+    /**
      * Insert tweet analysis
      * @param {string} tweetId - Database tweet ID (UUID)
      * @param {object} analysis - Analysis data

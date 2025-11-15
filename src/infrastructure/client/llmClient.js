@@ -63,39 +63,51 @@ class GoogleAIClient {
    // Specialized method for tweet analysis
    async analyzeTweet(tweetText) {
       const prompt = `
-  Analyze this tweet to extract prediction market opportunities. Focus on:
+  Analyze this tweet to extract ONLY high-relevance prediction market opportunities on Polymarkets.
 
-  **CRITICAL RULES:**
-  1. IGNORE stop words (when, where, what, who, why, how, will, the, is, are, etc.)
-  2. Extract MULTI-WORD PHRASES, not single words (e.g., "turkey election" NOT "turkey", "when")
-  3. Focus on SPECIFIC EVENTS, ENTITIES, and TOPICS that can be predicted
-  4. Combine related words into meaningful search terms
+  **CRITICAL FILTERING RULES - REJECT UNLESS SPECIFICALLY MET:**
+  1. REJECT all casual/filler words: "try", "like", "lit", "totally", "new", "really", "very", "just", etc.
+  2. REJECT all generic verbs and adjectives not tied to events: "happen", "get", "make", "have", "is", "are", etc.
+  3. REJECT greetings, exclamations, opinions without context: "oh", "wow", "cool", "bad", "good", "awesome", etc.
+  4. REJECT hashtags and slang as standalone keywords
+  5. Extract ONLY if the content enables someone to search Polymarket for a specific prediction
+  6. Combine related words into 2-4 word searchable phrases
 
-  **Extract:**
-  - **Financial Instruments**: Stocks, crypto, commodities, currencies (symbols/tickers)
-  - **Key Entities**: Companies, people, teams, countries, organizations
-  - **Market Events**: Specific events, elections, announcements, sports matches, releases
-  - **Betting Keywords**: 2-4 word phrases that describe prediction market topics
-    * Examples: "turkey election", "bitcoin price", "apple earnings", "world cup winner"
-    * NOT: "when", "will", "happen", "what", "is"
-  - **Sentiment**: positive/negative/neutral with a confidence score (0.0-1.0)
-  - **Summary**: A brief 1-2 sentence summary of the key prediction market relevance
-  - **Categories**: crypto, sports, politics, finance, entertainment, tech, etc.
+  **ONLY Extract If Relevant:**
+  - **Financial Instruments**: Stock tickers, crypto symbols, real commodities (BTC, TSLA, GLD, etc.) - NOT generic finance terms
+  - **Key Entities**: Named people, companies, countries, organizations (Elon Musk, Apple, USA, Tesla) - NOT generic nouns
+  - **Market Events**: Specific, datable events (elections, earnings reports, product launches, sports matches, court cases, economic reports)
+  - **Betting Keywords**: ONLY 2-4 word phrases that match actual Polymarket search terms
+    * GOOD examples: "Bitcoin price above 100k", "Trump 2024 election", "Apple iPhone 16 sales", "World Cup 2026 winner"
+    * BAD examples: "try", "totally", "lit", "new", "messaging system", "collapsing" (too vague without subject)
+  - **Sentiment**: positive/negative/neutral with confidence score (0.0-1.0)
+  - **Summary**: 1-2 sentences about prediction market relevance
+  - **Categories**: crypto, sports, politics, finance, entertainment, tech, science, etc.
+
+  **Confidence Scoring:**
+  - confidence: 0.9-1.0 = Clear, searchable prediction market topic
+  - confidence: 0.6-0.9 = Related but may need clarification
+  - confidence: Below 0.6 = Too vague, DON'T INCLUDE in results
+
+  **Categories Rule:**
+  - Select MAXIMUM 2 categories - pick the most relevant ones only
+  - Do NOT list more than 2 categories even if multiple apply
+  - Order by relevance: primary category first
 
   Tweet: "${tweetText}"
 
-  Respond ONLY with valid JSON:
+  Respond ONLY with valid JSON. OMIT empty arrays. Only include fields with relevant data:
   {
     "financial_instruments": ["BTC", "TSLA"],
-    "key_entities": ["Elon Musk", "Turkey", "Apple"],
-    "market_events": ["turkey election", "iphone launch"],
-    "sentiment": "positive|negative|neutral",
+    "key_entities": ["Elon Musk", "Apple"],
+    "market_events": ["Apple earnings report Q4 2025"],
+    "betting_keywords": ["Apple earnings beat", "Tesla stock price"],
+    "sentiment": "positive",
     "sentiment_score": 0.85,
-    "betting_keywords": ["turkey election", "bitcoin price"],
-    "categories": ["politics", "crypto"],
-    "summary": "Brief 1-2 sentence summary of prediction market relevance",
-    "confidence": 0.95,
-    "reasoning": "Brief explanation"
+    "categories": ["finance", "tech"],
+    "summary": "Brief 1-2 sentence summary",
+    "confidence": 0.92,
+    "reasoning": "Brief explanation of why this is market-relevant"
   }`;
 
       try {
@@ -144,84 +156,18 @@ class GoogleAIClient {
    }
 
    _extractFallbackKeywords(text) {
-      // Simple fallback keyword extraction - filters stop words and question words
-      const words = text.toLowerCase().match(/\b\w{3,}\b/g) || [];
-      const stopWords = new Set([
-         'the',
-         'and',
-         'for',
-         'are',
-         'but',
-         'not',
-         'you',
-         'all',
-         'can',
-         'had',
-         'her',
-         'was',
-         'one',
-         'our',
-         'out',
-         'day',
-         'get',
-         'has',
-         'him',
-         'his',
-         'how',
-         'its',
-         'may',
-         'new',
-         'now',
-         'old',
-         'see',
-         'two',
-         'way',
-         'who',
-         'boy',
-         'did',
-         'use',
-         'each',
-         'she',
-         'many',
-         'some',
-         'time',
-         'very',
-         'when',
-         'come',
-         'here',
-         'just',
-         'like',
-         'long',
-         'make',
-         'over',
-         'such',
-         'take',
-         'than',
-         'them',
-         'well',
-         'were',
-         'what',
-         'where',
-         'why',
-         'will',
-         'would',
-         'could',
-         'should',
-         'been',
-         'have',
-         'does',
-         'happen',
-         'about',
-         'into',
-         'than',
-         'that',
-         'this',
-         'with',
-         'from',
-         'let'
-      ]);
+      // Smart fallback - extract ONLY proper nouns and ticker symbols
+      // This is a last resort when LLM fails - be conservative to avoid garbage
 
-      return words.filter((word) => !stopWords.has(word)).slice(0, 5); // limit to 5 keywords
+      // Extract capitalized words/phrases (likely proper nouns: "Elon", "Apple", "Bitcoin")
+      const properNouns = text.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
+
+      // Extract all-caps ticker symbols (1-5 chars: "TSLA", "BTC", "DOGE")
+      const tickers = text.match(/\b[A-Z]{1,5}\b/g) || [];
+
+      // Combine and deduplicate, limit to 5
+      const combined = [...new Set([...properNouns, ...tickers])];
+      return combined.slice(0, 5);
    }
 }
 

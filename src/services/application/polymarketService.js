@@ -23,6 +23,8 @@ class PolymarketService {
     const fetchFn = await this._getFetch();
     const url = `${this.baseUrl}/public-search?q=${encodeURIComponent(q)}&page=${encodeURIComponent(page)}&events_status=active`;
 
+    
+
     const res = await fetchFn(url, { method: 'GET' });
     if (!res.ok) {
       const text = await res.text().catch(() => '');

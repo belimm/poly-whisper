@@ -70,7 +70,7 @@ const token = session.access_token; // Use this for API calls
 
 **4. Fetch Tweets from API**
 ```typescript
-const response = await fetch('http://localhost:3000/api/v2/tweets/latest?count=10', {
+const response = await fetch('http://localhost:3000/api/v2/tweets/with-analysis?limit=10&offset=0', {
   headers: {
     'Authorization': `Bearer ${token}`
   }
@@ -230,12 +230,16 @@ Authorization: Bearer YOUR_SUPABASE_JWT_TOKEN
 
 ### Endpoints
 
-#### 1. Get Latest Tweets
+#### 1. Get Tweets with Analysis
 
 **Request:**
 ```http
-GET /api/v2/tweets/latest?count=10
+GET /api/v2/tweets/with-analysis?limit=20&offset=0
 ```
+
+**Query Parameters:**
+- `limit` (optional, default: 10) - Number of tweets per page
+- `offset` (optional, default: 0) - Pagination offset
 
 **Response:**
 ```json
@@ -261,27 +265,6 @@ GET /api/v2/tweets/latest?count=10
       "enrichedAt": "2025-11-10T12:00:05Z"
     }
   ],
-  "count": 10
-}
-```
-
----
-
-#### 2. Get Paginated Tweets
-
-**Request:**
-```http
-GET /api/v2/tweets?limit=20&offset=0
-```
-
-**Query Parameters:**
-- `limit` (optional, default: 10) - Number of tweets per page
-- `offset` (optional, default: 0) - Pagination offset
-
-**Response:**
-```json
-{
-  "tweets": [...],
   "total": 150,
   "limit": 20,
   "offset": 0,
@@ -291,7 +274,7 @@ GET /api/v2/tweets?limit=20&offset=0
 
 ---
 
-#### 3. Search Tweets
+#### 2. Search Tweets
 
 **Request:**
 ```http
@@ -313,7 +296,7 @@ GET /api/v2/tweets/search?q=bitcoin&limit=50
 
 ---
 
-#### 4. Get Statistics
+#### 3. Get Statistics
 
 **Request:**
 ```http
@@ -333,7 +316,7 @@ GET /api/v2/tweets/statistics
 
 ---
 
-#### 5. Get User Profile
+#### 4. Get User Profile
 
 **Request:**
 ```http
@@ -354,7 +337,7 @@ GET /api/v2/user/profile
 
 ---
 
-#### 6. Create Bookmark
+#### 5. Create Bookmark
 
 **Request:**
 ```http

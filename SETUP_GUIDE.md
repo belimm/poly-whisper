@@ -138,12 +138,6 @@ All endpoints below require an `Authorization: Bearer <token>` header with a val
 
 #### Tweet Endpoints
 
-- `GET /api/v2/tweets` - Get paginated tweets
-  - Query params: `limit` (default: 10), `offset` (default: 0)
-
-- `GET /api/v2/tweets/latest` - Get latest tweets
-  - Query params: `count` (default: 10)
-
 - `GET /api/v2/tweets/with-analysis` - Get tweets with their analyses
   - Query params: `limit` (default: 10), `offset` (default: 0)
 
@@ -167,8 +161,6 @@ All endpoints below require an `Authorization: Bearer <token>` header with a val
 - `DELETE /api/v2/user/interactions/:interactionId` - Delete interaction
 
 ### Legacy Endpoints (Simple Token Auth)
-
-The old `/api/tweets` endpoints are still available using the simple token authentication for backwards compatibility.
 
 ---
 
@@ -240,7 +232,7 @@ const { data: { session }, error } = await supabase.auth.signInWithPassword({
 });
 
 // 4. Make authenticated API calls
-const response = await fetch('http://localhost:3000/api/v2/tweets/latest', {
+const response = await fetch('http://localhost:3000/api/v2/tweets/with-analysis?limit=10&offset=0', {
   headers: {
     'Authorization': `Bearer ${session.access_token}`
   }

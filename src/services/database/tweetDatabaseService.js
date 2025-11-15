@@ -128,7 +128,7 @@ class TweetDatabaseService {
             enrichedAt: row.enriched_at
         }));
 
-        console.log(enrichedTweets);
+        
 
         return { data: enrichedTweets, total: count };
     }

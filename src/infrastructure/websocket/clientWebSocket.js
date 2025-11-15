@@ -44,7 +44,7 @@ class ClientWebSocketService extends EventEmitter {
                         userId: supabaseAuth.user.id,
                         user: supabaseAuth.user
                     };
-                    console.log('✅ Supabase authentication successful');
+                    
                 } catch (supabaseError) {
                     // Fall back to simple token authentication
                     console.log('⚠️  Supabase auth failed, trying simple token:', supabaseError.message);
@@ -116,7 +116,6 @@ class ClientWebSocketService extends EventEmitter {
         const client = this.clients.get(clientId);
         if (!client) return;
 
-        console.log(`📨 Message from ${client.auth.client}:`, message);
 
         switch (message.type) {
             case 'ping':
@@ -145,6 +144,29 @@ class ClientWebSocketService extends EventEmitter {
                     type: 'error',
                     message: 'Unknown message type'
                 }));
+        }
+    }
+
+    // Broadcast generic message to all connected clients
+    broadcastMessage(messageData) {
+        if (!this.isRunning || this.clients.size === 0) return;
+
+        const message = JSON.stringify(messageData);
+
+
+        let sentCount = 0;
+        for (const [clientId, client] of this.clients) {
+            try {
+                client.ws.send(message);
+                sentCount++;
+            } catch (error) {
+                console.error(`Failed to send to client ${clientId}:`, error);
+                this.clients.delete(clientId);
+            }
+        }
+
+        if (sentCount > 0 && messageData.type !== 'marketUpdate') {
+            console.log(`📡 Broadcasted ${messageData.type} message to ${sentCount} client(s)`);
         }
     }
 
@@ -267,7 +289,7 @@ class ClientWebSocketService extends EventEmitter {
     // Gracefully close all connections
     close() {
         if (this.wss) {
-            console.log('🔌 Closing frontend WebSocket server...');
+            
             
             // Notify all clients before closing
             this.broadcastSystemMessage('Server is shutting down', 'warning');
@@ -280,7 +302,7 @@ class ClientWebSocketService extends EventEmitter {
             this.clients.clear();
             this.wss.close();
             this.isRunning = false;
-            console.log('✅ Frontend WebSocket server closed');
+            console.log('✅ Frontend WebSocket server closed 🔌');
         }
     }
 }

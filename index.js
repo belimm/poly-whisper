@@ -8,6 +8,9 @@ import TweetAnalyzer from './src/domain/tweetAnalyzer.js';
 import PolymarketService from './src/services/application/polymarketService.js';
 import TweetDatabaseService from './src/services/database/tweetDatabaseService.js';
 import TweetProcessingQueue from './src/services/application/tweetProcessingQueue.js';
+import PolymarketPoller from './src/services/market/polymarketPoller.js';
+import MarketMatchingService from './src/services/market/marketMatchingService.js';
+import MarketCacheService from './src/services/market/marketCacheService.js';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import { devLog, errorLog, infoLog } from './src/utils/logger.js';
@@ -48,6 +51,28 @@ const tweetQueue = new TweetProcessingQueue({
    maxQueueSize: 100, // Max 100 tweets in queue before rejecting
 });
 
+// Initialize market update services
+const marketCache = new MarketCacheService(
+   parseInt(process.env.MARKET_CACHE_TTL || '300000', 10) // 5 min default
+);
+
+const marketMatcher = new MarketMatchingService({
+   polymarket: polymarketService,
+   cache: marketCache,
+   maxMarketsPerKeyword: parseInt(process.env.MAX_MARKETS_PER_KEYWORD || '5', 10)
+});
+
+const polymarketPoller = new PolymarketPoller({
+   tweetDB,
+   marketMatcher,
+   clientWS,
+   tweetsArray: tweets, // Pass in-memory tweets array for real-time data
+   pollingInterval: parseInt(process.env.POLLING_INTERVAL || '3000', 10), // 3 sec default
+   tweetsLimit: parseInt(process.env.POLLS_TWEETS_LIMIT || '10', 10),
+   retryAttempts: parseInt(process.env.POLLING_RETRY_ATTEMPTS || '3', 10),
+   retryDelay: parseInt(process.env.POLLING_RETRY_DELAY || '1000', 10)
+});
+
 // Inject services and data into app locals for use in routes
 app.locals.tweets = tweets;
 app.locals.twitterWS = twitterWS;
@@ -56,6 +81,9 @@ app.locals.tweetAnalyzer = tweetAnalyzer;
 app.locals.polymarketService = polymarketService;
 app.locals.tweetDB = tweetDB;
 app.locals.tweetQueue = tweetQueue;
+app.locals.polymarketPoller = polymarketPoller;
+app.locals.marketMatcher = marketMatcher;
+app.locals.marketCache = marketCache;
 
 // Register new routes with Supabase authentication
 app.use('/api/tweets', tweetRoutes);
@@ -97,6 +125,11 @@ twitterWS.on('connected', () => {
       'Twitter WebSocket connected - listening for tweets',
       'info'
    );
+
+   // Start market polling once Twitter WebSocket is connected
+   polymarketPoller.start().catch(err => {
+      errorLog('Failed to start Polymarket poller:', err.message);
+   });
 });
 
 twitterWS.on('handshake', () => {
@@ -188,12 +221,17 @@ server.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
    infoLog('🛑 SIGTERM received, shutting down gracefully');
-   infoLog('⏳ Draining tweet processing queue...');
+   infoLog('⏳ Stopping services...');
 
    try {
+      // Stop market polling
+      polymarketPoller.stop();
+      infoLog('✅ Market poller stopped');
+
       // Stop accepting new tweets
       twitterWS.disconnect();
       clientWS.close();
+      infoLog('✅ WebSocket services closed');
 
       // Wait for queue to finish processing pending tweets
       await tweetQueue.drain();
@@ -210,12 +248,17 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
    infoLog('🛑 SIGINT received, shutting down gracefully');
-   infoLog('⏳ Draining tweet processing queue...');
+   infoLog('⏳ Stopping services...');
 
    try {
+      // Stop market polling
+      polymarketPoller.stop();
+      infoLog('✅ Market poller stopped');
+
       // Stop accepting new tweets
       twitterWS.disconnect();
       clientWS.close();
+      infoLog('✅ WebSocket services closed');
 
       // Wait for queue to finish processing pending tweets
       await tweetQueue.drain();

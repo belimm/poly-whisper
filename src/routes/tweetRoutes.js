@@ -8,67 +8,7 @@ const tweetDB = new TweetDatabaseService();
 // All routes in this router require authentication
 router.use(authenticateSupabaseUser);
 
-/**
- * GET /api/tweets
- * Get tweets with pagination
- * Query params: limit (default: 10), offset (default: 0)
- */
 
-/*/api/v2/tweets?limit=10 */
-router.get('/', async (req, res) => {
-    try {
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = parseInt(req.query.offset) || 0;
-
-        const { tweets, total } = await tweetDB.getLatestTweets(limit, offset);
-
-        res.json({
-            tweets,
-            total,
-            limit,
-            offset,
-            hasMore: offset + limit < total,
-            user: {
-                id: req.user.id,
-                email: req.user.email
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching tweets:', error);
-        res.status(500).json({
-            error: 'Failed to fetch tweets',
-            message: error.message
-        });
-    }
-});
-
-/**
- * GET /api/tweets/latest
- * Get latest tweets (shorthand)
- * Query params: count (default: 10)
- */
-
-router.get('/latest', async (req, res) => {
-    try {
-        const count = parseInt(req.query.count) || 10;
-        const { tweets } = await tweetDB.getLatestTweets(count, 0);
-
-        res.json({
-            tweets,
-            count: tweets.length,
-            user: {
-                id: req.user.id,
-                email: req.user.email
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching latest tweets:', error);
-        res.status(500).json({
-            error: 'Failed to fetch latest tweets',
-            message: error.message
-        });
-    }
-});
 
 /**
  * GET /api/tweets/with-analysis

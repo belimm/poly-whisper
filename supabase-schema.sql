@@ -49,14 +49,14 @@ CREATE TABLE IF NOT EXISTS public.tweet_analyses (
     UNIQUE(tweet_id, analysis_type)
 );
 
--- Polymarket matches table
-CREATE TABLE IF NOT EXISTS public.polymarket_matches (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tweet_id UUID REFERENCES public.tweets(id) ON DELETE CASCADE,
-    keyword TEXT NOT NULL,
-    market_data JSONB NOT NULL, -- Store Polymarket API response
-    matched_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- -- Polymarket matches table
+-- CREATE TABLE IF NOT EXISTS public.polymarket_matches (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     tweet_id UUID REFERENCES public.tweets(id) ON DELETE CASCADE,
+--     keyword TEXT NOT NULL,
+--     market_data JSONB NOT NULL, -- Store Polymarket API response
+--     matched_at TIMESTAMPTZ DEFAULT NOW()
+-- );
 
 -- User tweet interactions (favorites, bookmarks, etc.)
 CREATE TABLE IF NOT EXISTS public.user_interactions (
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.user_interactions (
 CREATE INDEX IF NOT EXISTS idx_tweets_created_at ON public.tweets(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tweets_author ON public.tweets(author_username);
 CREATE INDEX IF NOT EXISTS idx_tweet_analyses_tweet_id ON public.tweet_analyses(tweet_id);
-CREATE INDEX IF NOT EXISTS idx_polymarket_matches_tweet_id ON public.polymarket_matches(tweet_id);
+-- CREATE INDEX IF NOT EXISTS idx_polymarket_matches_tweet_id ON public.polymarket_matches(tweet_id);
 CREATE INDEX IF NOT EXISTS idx_user_interactions_user_id ON public.user_interactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_interactions_tweet_id ON public.user_interactions(tweet_id);
 
@@ -98,7 +98,7 @@ CREATE TRIGGER update_user_profiles_updated_at
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tweets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tweet_analyses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.polymarket_matches ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.polymarket_matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_interactions ENABLE ROW LEVEL SECURITY;
 
 -- User profiles: Users can read all profiles, but only update their own
@@ -124,10 +124,10 @@ CREATE POLICY "Authenticated users can view analyses"
     ON public.tweet_analyses FOR SELECT
     USING (auth.role() = 'authenticated');
 
--- Polymarket matches: All authenticated users can read matches
-CREATE POLICY "Authenticated users can view polymarket matches"
-    ON public.polymarket_matches FOR SELECT
-    USING (auth.role() = 'authenticated');
+-- -- Polymarket matches: All authenticated users can read matches
+-- CREATE POLICY "Authenticated users can view polymarket matches"
+--     ON public.polymarket_matches FOR SELECT
+--     USING (auth.role() = 'authenticated');
 
 -- User interactions: Users can only manage their own interactions
 CREATE POLICY "Users can view their own interactions"
@@ -156,9 +156,9 @@ CREATE POLICY "Service role can manage analyses"
     ON public.tweet_analyses FOR ALL
     USING (auth.role() = 'service_role');
 
-CREATE POLICY "Service role can manage polymarket matches"
-    ON public.polymarket_matches FOR ALL
-    USING (auth.role() = 'service_role');
+-- CREATE POLICY "Service role can manage polymarket matches"
+--     ON public.polymarket_matches FOR ALL
+--     USING (auth.role() = 'service_role');
 
 -- Create views for easier querying
 
@@ -187,7 +187,6 @@ SELECT
         'categories', ta.categories,
         'summary', ta.summary
     ) as analysis,
-    (SELECT json_agg(pm.market_data) FROM public.polymarket_matches pm WHERE pm.tweet_id = t.id) as polymarket_matches,
     t.enriched_at,
     t.indexed_at
 FROM public.tweets t

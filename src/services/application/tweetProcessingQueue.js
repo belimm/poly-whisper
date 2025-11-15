@@ -118,17 +118,6 @@ class TweetProcessingQueue {
             devLog(`  ✓ Analysis saved for tweet: ${dbTweet.id}`);
          }
 
-         // 3. Insert Polymarket matches if available
-         if (enrichedTweet.polymarketMatches?.length > 0 && dbTweet) {
-            await this.tweetDB.insertPolymarketMatches(
-               dbTweet.id,
-               enrichedTweet.polymarketMatches
-            );
-            devLog(
-               `  ✓ Polymarket matches saved: ${enrichedTweet.polymarketMatches.length} matches`
-            );
-         }
-
          const duration = Date.now() - startTime;
          devLog(
             `✅ Tweet fully processed: ${tweetId} (${duration}ms)`

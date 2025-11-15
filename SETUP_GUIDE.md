@@ -54,7 +54,6 @@ This will create:
 - `user_profiles` - User profile data
 - `tweets` - Raw tweet data
 - `tweet_analyses` - LLM analysis results
-- `polymarket_matches` - Polymarket search results
 - `user_interactions` - User bookmarks, favorites, etc.
 
 ### 1.3 Enable Authentication

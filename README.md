@@ -258,12 +258,6 @@ GET /api/v2/tweets/latest?count=10
         "keywords": ["bitcoin", "moon"],
         "categories": ["cryptocurrency"]
       },
-      "polymarketMatches": [
-        {
-          "question": "Will Bitcoin reach $100k in 2025?",
-          "probability": 0.65
-        }
-      ],
       "enrichedAt": "2025-11-10T12:00:05Z"
     }
   ],
@@ -559,13 +553,6 @@ interface EnrichedTweet {
     categories: string[];
     summary: string;
   };
-  polymarketMatches: Array<{
-    question: string;
-    slug: string;
-    volume: number;
-    probability: number;
-    [key: string]: any;
-  }>;
   enrichedAt: string; // ISO timestamp
 }
 ```

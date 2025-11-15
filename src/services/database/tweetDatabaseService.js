@@ -2,7 +2,7 @@ import { supabaseAdmin } from '../../infrastructure/database/supabaseClient.js';
 
 /**
  * Service for managing tweets in the database
- * Handles enriched tweet format with tweetDetails, analysis, polymarketMatches
+ * Handles enriched tweet format with tweetDetails and analysis
  */
 class TweetDatabaseService {
     constructor() {
@@ -11,7 +11,7 @@ class TweetDatabaseService {
 
     /**
      * Insert a new tweet from enriched format
-     * @param {object} enrichedTweet - Enriched tweet with tweetDetails, analysis, polymarketMatches
+     * @param {object} enrichedTweet - Enriched tweet with tweetDetails and analysis
      * @returns {Promise<object>} Inserted tweet
      */
     async insertTweet(enrichedTweet) {
@@ -125,7 +125,6 @@ class TweetDatabaseService {
         const enrichedTweets = data.map(row => ({
             tweetDetails: row.tweet_details,
             analysis: row.analysis,
-            polymarketMatches: row.polymarket_matches || [],
             enrichedAt: row.enriched_at
         }));
 
@@ -161,37 +160,6 @@ class TweetDatabaseService {
             })
             .select()
             .single();
-
-        if (error) throw error;
-        return data;
-    }
-
-    /**
-     * Insert Polymarket matches
-     * @param {string} tweetId - Database tweet ID (UUID)
-     * @param {Array} matches - Array of Polymarket match data
-     * @returns {Promise<Array>} Inserted matches
-     */
-    async insertPolymarketMatches(tweetId, matches) {
-        if (!this.supabase) {
-            throw new Error('Supabase client not initialized');
-        }
-
-        if (!matches || matches.length === 0) {
-            return [];
-        }
-
-        // Match format is directly the market data array
-        const matchRecords = matches.map((market, index) => ({
-            tweet_id: tweetId,
-            keyword: market.question || `market_${index}`, // Use question as keyword or index
-            market_data: market
-        }));
-
-        const { data, error } = await this.supabase
-            .from('polymarket_matches')
-            .insert(matchRecords)
-            .select();
 
         if (error) throw error;
         return data;

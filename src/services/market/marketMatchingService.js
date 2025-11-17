@@ -205,6 +205,7 @@ class MarketMatchingService {
                 outcomes: outcomes,
                 outcomePrices: outcomePrices,
                 endDate: market.endDate,
+                startDate: market.startDate,
                 closed: market.closed,
                 active: market.active,
                 updatedAt: market.updatedAt || new Date().toISOString(),
@@ -212,6 +213,38 @@ class MarketMatchingService {
                 // Preserve complete market data for display purposes
                 rawData: market
             };
+        }).filter(market => {
+            // Filter markets by volume - only include markets with volume > $1500
+            const volume = parseFloat(market.volume) || 0;
+            return volume > 1500;
+        }).filter(market => {
+            // Filter out markets with passed endDate - only include active markets
+            if (!market.endDate) {
+                return true; // Include markets without endDate
+            }
+            const endDate = new Date(market.endDate).getTime();
+            const now = new Date().getTime();
+            return endDate > now; // Only include markets that haven't ended yet
+        }).sort((a, b) => {
+            // Multi-metric sort: volume > liquidity > updatedAt (all descending)
+            // 1. Primary: Sort by volume (highest first)
+            const volumeA = parseFloat(a.volume) || 0;
+            const volumeB = parseFloat(b.volume) || 0;
+            if (volumeB !== volumeA) {
+                return volumeB - volumeA;
+            }
+
+            // 2. Secondary: Sort by liquidity (highest first) if volumes are equal
+            const liquidityA = parseFloat(a.liquidity) || 0;
+            const liquidityB = parseFloat(b.liquidity) || 0;
+            if (liquidityB !== liquidityA) {
+                return liquidityB - liquidityA;
+            }
+
+            // 3. Tertiary: Sort by updatedAt (newest first) if volumes and liquidity are equal
+            const dateA = new Date(a.updatedAt).getTime();
+            const dateB = new Date(b.updatedAt).getTime();
+            return dateB - dateA;
         });
     }
 

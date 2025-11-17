@@ -207,7 +207,7 @@ server.listen(PORT, () => {
       console.log(`🔐 Authentication: Simple token-based`);
       console.log(`🐦 Tweet endpoints: ${tweetEndpointUrl}`);
       console.log(`🔌 WebSocket endpoint: ${wsEndpointUrl}?token=<api_token>`);
-      console.log(`\n🌐 Frontend should run on: http://localhost:5173`);
+      console.log(`\n🌐 Frontend should run on: http://localhost:3001`);
       console.log(`📡 Frontend WebSocket connection: ${wsEndpointUrl}`);
    } else {
       console.log(`🚀 Server running in PRODUCTION mode`);

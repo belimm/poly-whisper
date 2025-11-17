@@ -3,6 +3,7 @@
 // Now includes LLM-based analysis using Google AI Studio.
 
 import GoogleAIClient from '../infrastructure/client/llmClient.js';
+import { filterStopwords } from '../utils/stopwords.js';
 
 export default class TweetAnalyzer {
    constructor(options = {}) {
@@ -68,10 +69,13 @@ export default class TweetAnalyzer {
          }
       }
 
+      // Apply stopwords filter to remove irrelevant keywords
+      const filteredKeywords = filterStopwords(keywords);
+
       return {
          text: cleanText,
          originalText: String(text),
-         keywords: Array.from(new Set(keywords)),
+         keywords: Array.from(new Set(filteredKeywords)),
          categories: Array.from(categories),
          isRetweet: this._isRetweet(String(text)),
          analyzedAt: new Date().toISOString(),
@@ -107,6 +111,9 @@ export default class TweetAnalyzer {
             ...(llmResult.key_entities || []).map((e) => e.toLowerCase()),
          ];
 
+         // Apply stopwords filter to remove irrelevant keywords
+         const filteredKeywords = filterStopwords(allKeywords);
+
          const allCategories = [
             ...heuristicResult.categories,
             ...(llmResult.categories || []),
@@ -115,7 +122,7 @@ export default class TweetAnalyzer {
          return {
             text: cleanText,
             originalText: String(text),
-            keywords: Array.from(new Set(allKeywords)).slice(0, 10), // limit to 10 most relevant
+            keywords: Array.from(new Set(filteredKeywords)).slice(0, 10), // limit to 10 most relevant, filtered
             categories: Array.from(new Set(allCategories)),
             sentiment: llmResult.sentiment || 'neutral',
             sentimentScore: llmResult.sentiment_score || 0.5,

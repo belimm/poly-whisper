@@ -65,49 +65,49 @@ class GoogleAIClient {
       const prompt = `
   Analyze this tweet to extract ONLY high-relevance prediction market opportunities on Polymarkets.
 
-  **CRITICAL FILTERING RULES - REJECT UNLESS SPECIFICALLY MET:**
-  1. REJECT all casual/filler words: "try", "like", "lit", "totally", "new", "really", "very", "just", etc.
-  2. REJECT all generic verbs and adjectives not tied to events: "happen", "get", "make", "have", "is", "are", etc.
-  3. REJECT greetings, exclamations, opinions without context: "oh", "wow", "cool", "bad", "good", "awesome", etc.
-  4. REJECT hashtags and slang as standalone keywords
-  5. Extract ONLY if the content enables someone to search Polymarket for a specific prediction
-  6. Combine related words into 2-4 word searchable phrases
+  **CRITICAL FILTERING RULES - STRICT REJECTION OF IRRELEVANT WORDS:**
 
-  **ONLY Extract If Relevant:**
-  - **Financial Instruments**: Stock tickers, crypto symbols, real commodities (BTC, TSLA, GLD, etc.) - NOT generic finance terms
-  - **Key Entities**: Named people, companies, countries, organizations (Elon Musk, Apple, USA, Tesla) - NOT generic nouns
-  - **Market Events**: Specific, datable events (elections, earnings reports, product launches, sports matches, court cases, economic reports)
-  - **Betting Keywords**: ONLY 2-4 word phrases that match actual Polymarket search terms
-    * GOOD examples: "Bitcoin price above 100k", "Trump 2024 election", "Apple iPhone 16 sales", "World Cup 2026 winner"
-    * BAD examples: "try", "totally", "lit", "new", "messaging system", "collapsing" (too vague without subject)
-  - **Sentiment**: positive/negative/neutral with confidence score (0.0-1.0)
-  - **Summary**: 1-2 sentences about prediction market relevance
-  - **Categories**: crypto, sports, politics, finance, entertainment, tech, science, etc.
+  ❌ REJECT THESE CATEGORIES COMPLETELY:
+  1. PRONOUNS: "this", "that", "these", "those", "you", "he", "she", "it", "we", "they", "what", "which", "who", "that"
+  2. GENERIC ADJECTIVES: "new", "cool", "long", "true", "good", "bad", "big", "small", "first", "last", "right", "best", "worst"
+  3. GENERIC VERBS: "is", "are", "was", "were", "have", "has", "get", "make", "go", "come", "happen", "work", "be", "do", "working"
+  4. COMMON ADVERBS: "very", "just", "really", "totally", "never", "always", "just", "only", "more", "most"
+  5. FILLER WORDS: "like", "oh", "wow", "cool", "awesome", "amazing", "nice", "lol", "omg"
+  6. GENERIC NOUNS: "thing", "stuff", "way", "time", "place", "part", "level"
+  7. SINGLE LETTERS & NUMBERS: "a", "b", "x", "y", or single digit numbers
+  8. HASHTAGS AS STANDALONE: Only extract if part of a meaningful phrase
 
-  **Confidence Scoring:**
-  - confidence: 0.9-1.0 = Clear, searchable prediction market topic
-  - confidence: 0.6-0.9 = Related but may need clarification
-  - confidence: Below 0.6 = Too vague, DON'T INCLUDE in results
+  ✅ ONLY EXTRACT THESE:
+  - **Financial Instruments**: Ticker symbols (BTC, TSLA, AAPL) or full names (Bitcoin, Apple, Tesla)
+  - **Key Entities**: Specific proper nouns only (Elon Musk, JPMorgan, USA, UK) - NO generic nouns
+  - **Market Events**: Concrete, datable events (2024 election, Q4 earnings, FDA approval, World Cup)
+  - **Betting Keywords**: 2-4 word searchable phrases that directly match Polymarket listings
+    * GOOD: "Tesla stock price", "Bitcoin above 100k", "Trump 2024 election winner"
+    * BAD: "try", "working", "cool", "you", "this", "never", "really", "totally", "kind", "always"
+
+  **CONFIDENCE THRESHOLD:**
+  - 0.9-1.0: Clear market topic with specific named entities/events
+  - 0.6-0.9: Related but may need clarification
+  - Below 0.6: EXCLUDE from results entirely
 
   **Categories Rule:**
-  - Select MAXIMUM 2 categories - pick the most relevant ones only
-  - Do NOT list more than 2 categories even if multiple apply
-  - Order by relevance: primary category first
+  - Maximum 2 categories, ordered by relevance
+  - Do NOT include generic categories without specific evidence
 
   Tweet: "${tweetText}"
 
-  Respond ONLY with valid JSON. OMIT empty arrays. Only include fields with relevant data:
+  Respond ONLY with valid JSON. OMIT empty arrays. Only include fields with actual data:
   {
     "financial_instruments": ["BTC", "TSLA"],
     "key_entities": ["Elon Musk", "Apple"],
-    "market_events": ["Apple earnings report Q4 2025"],
-    "betting_keywords": ["Apple earnings beat", "Tesla stock price"],
+    "market_events": ["Tesla earnings Q4 2025"],
+    "betting_keywords": ["Tesla stock price above 300", "Bitcoin above 100k"],
     "sentiment": "positive",
     "sentiment_score": 0.85,
     "categories": ["finance", "tech"],
     "summary": "Brief 1-2 sentence summary",
     "confidence": 0.92,
-    "reasoning": "Brief explanation of why this is market-relevant"
+    "reasoning": "Brief explanation of market relevance"
   }`;
 
       try {

@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
-import ordersRoutes from './src/routes/ordersRoutes.js';
+// import ordersRoutes from './src/routes/ordersRoutes.js';
 import {getFrontendUrl} from './src/utils/util.js';
 // Create Express app
 const app = express();
@@ -97,7 +97,7 @@ app.get('/', (req, res) => {
 // Register new Supabase-authenticated routes (v2)
 app.use('/api/tweets', tweetRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/orders', ordersRoutes);
+//app.use('/api/orders', ordersRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -103,8 +103,16 @@ router.get('/statistics', async (req, res) => {
 router.get('/:tweetId/findMarkets', async (req, res) => {
    try {
       const { tweetId } = req.params;
+      const { q, qc } = req.query;
 
-      console.log(`🔍 Finding markets for tweet: ${tweetId}`);
+      // Parse q parameter, default to 5, ensure it's a positive integer
+      const marketLimit = Math.max(1, parseInt(q) || 5);
+      // Parse qc parameter (markets per keyword), default to 5
+      const marketLimitPerKeyword = Math.max(1, parseInt(qc) || 5);
+
+      console.log(
+         `🔍 Finding markets for tweet: ${tweetId} (limit: ${marketLimit}, per keyword: ${marketLimitPerKeyword})`
+      );
 
       // Fetch tweet with its analysis
       const tweet = await tweetDB.getTweetWithAnalysisById(tweetId);
@@ -129,11 +137,22 @@ router.get('/:tweetId/findMarkets', async (req, res) => {
          keywords
       );
 
+      // Limit markets per keyword based on qc parameter
+      const limitedMarketsByKeyword = {};
+      Object.entries(marketsByKeyword).forEach(([keyword, markets]) => {
+         if (Array.isArray(markets)) {
+            limitedMarketsByKeyword[keyword] = markets.slice(0, marketLimitPerKeyword);
+         } else {
+            limitedMarketsByKeyword[keyword] = markets;
+         }
+      });
+
       // Flatten all markets from all keywords
       const allMarkets = [];
       const seenIds = new Set();
 
-      Object.values(marketsByKeyword).forEach((markets) => {
+      Object.values(limitedMarketsByKeyword).forEach((markets) => {
+
          if (Array.isArray(markets)) {
             markets.forEach((market) => {
                if (!seenIds.has(market.id)) {
@@ -144,8 +163,11 @@ router.get('/:tweetId/findMarkets', async (req, res) => {
          }
       });
 
+      // Limit the number of markets based on q parameter
+      const limitedMarkets = allMarkets.slice(0, marketLimit);
+
       console.log(
-         `✅ Found ${allMarkets.length} markets for keywords:`,
+         `✅ Found ${allMarkets.length} markets, returning ${limitedMarkets.length} (limit: ${marketLimit}) for keywords:`,
          keywords
       );
 
@@ -153,9 +175,11 @@ router.get('/:tweetId/findMarkets', async (req, res) => {
          success: true,
          tweetId: tweet.id,
          keywords,
-         markets: allMarkets,
+         markets: limitedMarkets,
          marketCount: allMarkets.length,
-         marketsByKeyword,
+         marketCountQ: limitedMarkets.length,
+         totalMarketsFound: allMarkets.length,
+         marketsByKeyword: limitedMarketsByKeyword,
       });
    } catch (error) {
       console.error('❌ Error finding markets:', error);

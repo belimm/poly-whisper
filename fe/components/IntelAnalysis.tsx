@@ -1,45 +1,30 @@
 'use client';
 
-import { EnrichedTweet } from "@/lib/types";
+import { EnrichedTweet } from '@/lib/types';
+import { TweetMarket } from './TweetMarket';
 
 interface IntelAnalysisProps {
-   tweets: EnrichedTweet[]
-   loading: boolean
-   error: string | null
-   hasMore: boolean
-   loadMore: () => void
+   tweets: EnrichedTweet[];
+   loading: boolean;
+   error: string | null;
+   hasMore: boolean;
+   loadMore: () => void;
 }
 
-export default function IntelAnalysis({ tweets, loading, error, hasMore, loadMore }: IntelAnalysisProps) {
-
-   // Generate dummy analysis for a tweet
-   const getDummyAnalysis = (tweet: EnrichedTweet) => {
-      const sentiments = ['Bullish', 'Bearish', 'Neutral'];
-      const sentimentColors = ['green', 'red', 'gray'];
-      const predictions = [
-         'Bitcoin > $100K by Q2',
-         'ETH L2s will dominate',
-         'Polymarket volume to surge',
-         'Crypto regulation tightens',
-         'DeFi TVL reaches $200B'
-      ];
-      const confidences = ['94%', '88%', '76%', '82%', '91%'];
-      const impactScores = ['High', 'Medium', 'Low'];
-      const outcomes = ['YES', 'NO', 'PENDING'];
-
-      // Use tweet ID to generate consistent dummy data for each tweet
-      const seedIndex = parseInt(tweet.tweetDetails.tweetId.slice(-1), 16) || 0;
-      const sentimentIndex = seedIndex % sentiments.length;
-
-      return {
-         sentiment: sentiments[sentimentIndex],
-         sentimentColor: sentimentColors[sentimentIndex],
-         prediction: predictions[seedIndex % predictions.length],
-         confidence: confidences[seedIndex % confidences.length],
-         impactScore: impactScores[seedIndex % impactScores.length],
-         outcome: outcomes[seedIndex % outcomes.length],
-         outcomeColor: sentimentColors[seedIndex % sentiments.length],
+export default function IntelAnalysis({
+   tweets,
+   loading,
+   error,
+   hasMore,
+   loadMore,
+}: IntelAnalysisProps) {
+   const getSentimentInfo = (sentiment: string) => {
+      const sentimentMap: Record<string, { label: string; color: string }> = {
+         positive: { label: 'Bullish', color: 'green' },
+         negative: { label: 'Bearish', color: 'red' },
+         neutral: { label: 'Neutral', color: 'gray' },
       };
+      return sentimentMap[sentiment] || sentimentMap.neutral;
    };
 
    const linkifyText = (text: string) => {
@@ -96,10 +81,14 @@ export default function IntelAnalysis({ tweets, loading, error, hasMore, loadMor
             )}
 
             {tweets.map((tweet) => {
-               const analysis = getDummyAnalysis(tweet);
+               const sentimentInfo = getSentimentInfo(tweet.analysis.sentiment);
+               const confidence = Math.round(
+                  tweet.analysis.sentimentScore * 100
+               );
+
                return (
                   <div
-                     key={tweet.id}
+                     key={tweet.tweetDetails.tweetId}
                      className="rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:shadow-md transition-shadow">
                      <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
@@ -113,40 +102,17 @@ export default function IntelAnalysis({ tweets, loading, error, hasMore, loadMor
                            </span>
                         </div>
                         <span
-                           className={`inline-flex items-center rounded-md bg-${analysis.sentimentColor}-500/10 px-2 py-1 text-xs font-bold text-${analysis.sentimentColor}-500 ring-1 ring-inset ring-${analysis.sentimentColor}-500/20 uppercase`}>
-                           {analysis.sentiment}
+                           className={`inline-flex items-center rounded-md bg-${sentimentInfo.color}-500/10 px-2 py-1 text-xs font-bold text-${sentimentInfo.color}-500 ring-1 ring-inset ring-${sentimentInfo.color}-500/20 uppercase`}>
+                           {sentimentInfo.label}
                         </span>
                      </div>
                      <p className="text-xs italic text-gray-600 dark:text-gray-400 mb-3 border-l-2 border-gray-300 dark:border-gray-600 pl-2 leading-relaxed">
                         &ldquo;{linkifyText(tweet.tweetDetails.text)}&rdquo;
                      </p>
-                     <div className="bg-gray-50 dark:bg-black/20 p-2.5 rounded border border-dashed border-gray-200 dark:border-gray-700">
-                        <div className="flex justify-between items-center mb-1.5">
-                           <div className="flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[12px] text-primary">
-                                 auto_awesome
-                              </span>
-                              <span className="text-[10px] uppercase text-gray-500 font-bold">
-                                 AI Prediction
-                              </span>
-                           </div>
-                           <span className="text-[10px] text-primary font-mono">
-                              Confidence: {analysis.confidence}
-                           </span>
-                        </div>
-                        <p className="text-sm font-bold text-[#111418] dark:text-white">
-                           {analysis.prediction}
-                        </p>
-                        <div className="mt-2 flex items-center justify-between text-[10px]">
-                           <span className="text-gray-500">
-                              Impact Score: {analysis.impactScore}
-                           </span>
-                           <span
-                              className={`text-${analysis.outcomeColor}-500 font-bold`}>
-                              {analysis.outcome}
-                           </span>
-                        </div>
-                     </div>
+                     <TweetMarket
+                        tweetId={tweet.tweetDetails.tweetId}
+                        confidence={confidence}
+                     />
                   </div>
                );
             })}

@@ -26,10 +26,21 @@ class PolyWhisperAPI {
    /**
     * Find Polymarket markets for a specific tweet
     */
-   async findMarketsForTweet(tweetId: string): Promise<MarketsResponse> {
-      const response = await fetch(
-         `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/${tweetId}/findMarkets`
-      );
+   async findMarketsForTweet(tweetId: string, q?: number, qc?: number): Promise<MarketsResponse> {
+      const queryParams = new URLSearchParams();
+
+      if (q !== undefined) {
+         queryParams.append('q', q.toString());
+      }
+
+      if (qc !== undefined) {
+         queryParams.append('qc', qc.toString());
+      }
+
+      const queryString = queryParams.toString();
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/${tweetId}/findMarkets${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url);
 
       if (!response.ok) {
          if (response.status === 404) {

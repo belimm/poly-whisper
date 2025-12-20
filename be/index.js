@@ -89,31 +89,6 @@ app.locals.marketCache = marketCache;
 app.use('/api/tweets', tweetRoutes);
 app.use('/api/user', userRoutes);
 
-// // Queue monitoring endpoints (public for monitoring)
-// app.get('/api/queue-stats', (req, res) => {
-//    res.json({
-//       queue: tweetQueue.getStats(),
-//       timestamp: new Date().toISOString(),
-//    });
-// });
-
-// // Endpoint to adjust queue concurrency on the fly
-// app.post('/api/queue-concurrency', (req, res) => {
-//    const { concurrency } = req.body;
-
-//    if (!concurrency || concurrency < 1 || concurrency > 10) {
-//       return res.status(400).json({
-//          error: 'Invalid concurrency value',
-//          message: 'Concurrency must be between 1 and 10',
-//       });
-//    }
-
-//    tweetQueue.setConcurrency(concurrency);
-//    res.json({
-//       message: `Queue concurrency updated to ${concurrency}`,
-//       stats: tweetQueue.getStats(),
-//    });
-// });
 
 // Create WebSocket server for frontend clients
 clientWS.createServer(server);

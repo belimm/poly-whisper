@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { api } from '@/lib/api'
 import { EnrichedTweet } from '@/lib/types'
 
@@ -15,6 +15,7 @@ export function useTweets(options: UseTweetsOptions = {}) {
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const [total, setTotal] = useState(0)
+  const hasFetchedRef = useRef(false)
 
   const fetchTweets = async (currentOffset = offset) => {
     try {
@@ -22,13 +23,13 @@ export function useTweets(options: UseTweetsOptions = {}) {
       setError(null)
 
       const data = await api.getTweetsWithAnalysis(limit, currentOffset)
-      
+
       if (currentOffset === 0) {
         setTweets(data.tweets)
       } else {
         setTweets(prev => [...prev, ...data.tweets])
       }
-      
+
       setHasMore(data.hasMore)
       setTotal(data.total)
     } catch (err) {
@@ -45,10 +46,12 @@ export function useTweets(options: UseTweetsOptions = {}) {
   }
 
   useEffect(() => {
-    if (autoFetch) {
+    if (autoFetch && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
       fetchTweets()
     }
-  }, [limit])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return {
     tweets,
@@ -58,7 +61,8 @@ export function useTweets(options: UseTweetsOptions = {}) {
     total,
     fetchTweets,
     loadMore,
-    refresh: () => fetchTweets(0)
+    refresh: () => fetchTweets(0),
+    setTweets
   }
 }
 

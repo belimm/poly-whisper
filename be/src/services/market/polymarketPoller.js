@@ -131,7 +131,7 @@ class PolymarketPoller {
             const updatePayload = this._buildUpdatePayload(tweets, marketsByKeyword);
 
             // 5. Broadcast to all connected clients
-            this._broadcastMarketUpdates(updatePayload);
+            // this._broadcastMarketUpdates(updatePayload);
 
             // Update stats
             const pollDuration = Date.now() - pollStartTime;
@@ -256,21 +256,21 @@ class PolymarketPoller {
         return markets;
     }
 
-    /**
-     * Broadcast market updates to all connected WebSocket clients
-     * @private
-     */
-    _broadcastMarketUpdates(updatePayload) {
-        if (!this.clientWS) {
-            return;
-        }
+    // /**
+    //  * Broadcast market updates to all connected WebSocket clients
+    //  * @private
+    //  */
+    // _broadcastMarketUpdates(updatePayload) {
+    //     if (!this.clientWS) {
+    //         return;
+    //     }
 
-        try {
-            this.clientWS.broadcastMessage(updatePayload);
-        } catch (error) {
-            // Silently ignore broadcast errors
-        }
-    }
+    //     try {
+    //         this.clientWS.broadcastMessage(updatePayload);
+    //     } catch (error) {
+    //         // Silently ignore broadcast errors
+    //     }
+    // }
 
     /**
      * Get current polling status

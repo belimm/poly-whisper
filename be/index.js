@@ -11,6 +11,7 @@ import TweetProcessingQueue from './src/services/application/tweetProcessingQueu
 import PolymarketPoller from './src/services/market/polymarketPoller.js';
 import MarketMatchingService from './src/services/market/marketMatchingService.js';
 import MarketCacheService from './src/services/market/marketCacheService.js';
+import MarketTrendingPoller from './src/services/market/marketTrendingPoller.js';
 import tweetRoutes from './src/routes/tweetRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import { devLog, errorLog, infoLog } from './src/utils/logger.js';
@@ -23,10 +24,6 @@ import {
    buildWebSocketUrl,
    isDev,
 } from './src/utils/urlBuilder.js';
-
-
-
-
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
@@ -59,7 +56,10 @@ const marketCache = new MarketCacheService(
 const marketMatcher = new MarketMatchingService({
    polymarket: polymarketService,
    cache: marketCache,
-   maxMarketsPerKeyword: parseInt(process.env.MAX_MARKETS_PER_KEYWORD || '5', 10)
+   maxMarketsPerKeyword: parseInt(
+      process.env.MAX_MARKETS_PER_KEYWORD || '5',
+      10
+   ),
 });
 
 const polymarketPoller = new PolymarketPoller({
@@ -70,7 +70,14 @@ const polymarketPoller = new PolymarketPoller({
    pollingInterval: parseInt(process.env.POLLING_INTERVAL || '3000', 10), // 3 sec default
    tweetsLimit: parseInt(process.env.POLLS_TWEETS_LIMIT || '10', 10),
    retryAttempts: parseInt(process.env.POLLING_RETRY_ATTEMPTS || '3', 10),
-   retryDelay: parseInt(process.env.POLLING_RETRY_DELAY || '1000', 10)
+   retryDelay: parseInt(process.env.POLLING_RETRY_DELAY || '1000', 10),
+});
+
+// Initialize market trending poller (fetches popular markets every 10 seconds)
+const marketTrendingPoller = new MarketTrendingPoller({
+   polymarketService,
+   clientWS,
+   pollingInterval: parseInt(process.env.MARKET_TRENDING_INTERVAL || '10000', 10), // 10 sec default
 });
 
 // Inject services and data into app locals for use in routes
@@ -84,36 +91,11 @@ app.locals.tweetQueue = tweetQueue;
 app.locals.polymarketPoller = polymarketPoller;
 app.locals.marketMatcher = marketMatcher;
 app.locals.marketCache = marketCache;
+app.locals.marketTrendingPoller = marketTrendingPoller;
 
 // Register new routes with Supabase authentication
 app.use('/api/tweets', tweetRoutes);
 app.use('/api/user', userRoutes);
-
-// // Queue monitoring endpoints (public for monitoring)
-// app.get('/api/queue-stats', (req, res) => {
-//    res.json({
-//       queue: tweetQueue.getStats(),
-//       timestamp: new Date().toISOString(),
-//    });
-// });
-
-// // Endpoint to adjust queue concurrency on the fly
-// app.post('/api/queue-concurrency', (req, res) => {
-//    const { concurrency } = req.body;
-
-//    if (!concurrency || concurrency < 1 || concurrency > 10) {
-//       return res.status(400).json({
-//          error: 'Invalid concurrency value',
-//          message: 'Concurrency must be between 1 and 10',
-//       });
-//    }
-
-//    tweetQueue.setConcurrency(concurrency);
-//    res.json({
-//       message: `Queue concurrency updated to ${concurrency}`,
-//       stats: tweetQueue.getStats(),
-//    });
-// });
 
 // Create WebSocket server for frontend clients
 clientWS.createServer(server);
@@ -127,7 +109,7 @@ twitterWS.on('connected', () => {
    );
 
    // Start market polling once Twitter WebSocket is connected
-   polymarketPoller.start().catch(err => {
+   polymarketPoller.start().catch((err) => {
       errorLog('Failed to start Polymarket poller:', err.message);
    });
 });
@@ -216,6 +198,11 @@ server.listen(PORT, () => {
 
    // Connect to Twitter WebSocket
    twitterWS.connect();
+
+   // Start market trending poller (independent of Twitter WebSocket)
+   marketTrendingPoller.start().catch((err) => {
+      errorLog('Failed to start Market Trending poller:', err.message);
+   });
 });
 
 // Graceful shutdown
@@ -227,6 +214,10 @@ process.on('SIGTERM', async () => {
       // Stop market polling
       polymarketPoller.stop();
       infoLog('✅ Market poller stopped');
+
+      // Stop market trending poller
+      marketTrendingPoller.stop();
+      infoLog('✅ Market trending poller stopped');
 
       // Stop accepting new tweets
       twitterWS.disconnect();
@@ -254,6 +245,10 @@ process.on('SIGINT', async () => {
       // Stop market polling
       polymarketPoller.stop();
       infoLog('✅ Market poller stopped');
+
+      // Stop market trending poller
+      marketTrendingPoller.stop();
+      infoLog('✅ Market trending poller stopped');
 
       // Stop accepting new tweets
       twitterWS.disconnect();

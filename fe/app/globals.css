@@ -55,3 +55,18 @@ body {
 /* Manrope Font */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
 
+/* Text color transition effect */
+.text-color-sweep {
+  background: linear-gradient(90deg, #3b82f6 0%, #3b82f6 50%, white 50%, white 100%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: background-position 0.7s ease-in-out;
+}
+
+.text-color-sweep:hover {
+  background-position: 0 0;
+}
+

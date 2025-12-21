@@ -1,6 +1,8 @@
 /* eslint-disable react/jsx-no-comment-textnodes */
 'use client';
 
+import WalletConnectButton from './WalletConnectButton';
+
 interface HeaderProps {
    isConnected?: boolean;
 }
@@ -65,15 +67,7 @@ export default function Header({ isConnected = false }: HeaderProps) {
                </a>
             </div>
             <div className="flex items-center gap-3">
-               <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold leading-normal tracking-[0.015em] transition-colors">
-                  <span className="truncate">Connect</span>
-               </button>
-               {/* <div
-            className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-[#e5e7eb] dark:border-border-dark"
-            style={{
-              backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuAjkKjCghEACHoJhr2x9dxAmgIU1mRACFqC4KKRqpEWZU2nI3jIScAlHee71Fn5y_ODdfFeb23Ay7mAMTJz2RrSS5pcflaPx4cxaPug389u9LeUqDBsuQLPsKWlD8w2Akg5mhfesT72x6_BDD1JXzSw0uFruNnxrp-w7_KD3JrGK9B_SdOkaqenxwGeV09PFkgUda_jiOIsWigLNkVesbyX_94CJA7E-fvCF3aZ2M_4r50Bz5G_2Z-wBAkYaee8X56xkuIaO4S8pRwQ")`
-            }}
-          ></div> */}
+               <WalletConnectButton />
             </div>
          </div>
       </header>

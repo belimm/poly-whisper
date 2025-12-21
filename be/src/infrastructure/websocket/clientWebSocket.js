@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws';
 import { EventEmitter } from 'events';
 import crypto from 'crypto';
 import { getFrontendUrl } from '../../utils/util.js';
+import { devLog } from '../../utils/logger.js';
 
 class ClientWebSocketService extends EventEmitter {
    constructor() {
@@ -25,11 +26,17 @@ class ClientWebSocketService extends EventEmitter {
 
                // Check if origin is allowed
                if (origin && !allowedOrigins.includes(origin)) {
-                  console.warn(`🚫 WebSocket connection rejected from unauthorized origin: ${origin}`);
+                  console.warn(
+                     `🚫 WebSocket connection rejected from unauthorized origin: ${origin}`
+                  );
                   return false;
                }
 
-               console.log(`✅ WebSocket connection approved from origin: ${origin || 'unknown'}`);
+               console.log(
+                  `✅ WebSocket connection approved from origin: ${
+                     origin || 'unknown'
+                  }`
+               );
                return true;
             } catch (error) {
                console.error('WebSocket verification error:', error);
@@ -42,10 +49,12 @@ class ClientWebSocketService extends EventEmitter {
          try {
             // Generate unique client ID based on browser fingerprint
             const userAgent = req.headers['user-agent'] || 'unknown';
-            const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-                       req.socket.remoteAddress ||
-                       'unknown';
-            const origin = req.headers.origin || req.headers.referer || 'unknown';
+            const ip =
+               req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+               req.socket.remoteAddress ||
+               'unknown';
+            const origin =
+               req.headers.origin || req.headers.referer || 'unknown';
 
             // Create fingerprint hash
             const fingerprint = crypto
@@ -64,7 +73,9 @@ class ClientWebSocketService extends EventEmitter {
                connectedAt: new Date().toISOString(),
             });
 
-            console.log(`✅ Client connected: ${clientId} from ${origin} (${ip})`);
+            console.log(
+               `✅ Client connected: ${clientId} from ${origin} (${ip})`
+            );
             console.log(`📊 Total connected clients: ${this.clients.size}`);
 
             // Send welcome message
@@ -175,7 +186,7 @@ class ClientWebSocketService extends EventEmitter {
       }
 
       if (sentCount > 0 && messageData.type !== 'marketUpdate') {
-         console.log(
+         devLog(
             `📡 Broadcasted ${messageData.type} message to ${sentCount} client(s)`
          );
       }
@@ -206,7 +217,7 @@ class ClientWebSocketService extends EventEmitter {
       }
 
       if (sentCount > 0) {
-         console.log(`📡 Broadcasted tweet to ${sentCount} client(s)`);
+         devLog(`📡 Broadcasted tweet to ${sentCount} client(s)`);
       }
    }
 

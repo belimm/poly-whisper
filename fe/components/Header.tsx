@@ -53,11 +53,11 @@ export default function Header({ isConnected = false }: HeaderProps) {
                   href="#">
                   Dashboard
                </a>
-               <a
+               {/* <a
                   className="text-[#111418] dark:text-gray-300 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors"
                   href="#">
                   Alerts
-               </a>
+               </a> */}
                <a
                   className="text-[#111418] dark:text-gray-300 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal transition-colors"
                   href="#">

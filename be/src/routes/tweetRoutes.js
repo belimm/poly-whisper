@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateSupabaseUser } from '../middleware/supabaseAuth.js';
 import TweetDatabaseService from '../services/database/tweetDatabaseService.js';
 import MarketMatchingService from '../services/market/marketMatchingService.js';
+import { devLog } from '../utils/logger.js';
 
 const router = express.Router();
 const tweetDB = new TweetDatabaseService();
@@ -110,7 +111,7 @@ router.get('/:tweetId/findMarkets', async (req, res) => {
       // Parse qc parameter (markets per keyword), default to 5
       const marketLimitPerKeyword = Math.max(1, parseInt(qc) || 5);
 
-      console.log(
+      devLog(
          `🔍 Finding markets for tweet: ${tweetId} (limit: ${marketLimit}, per keyword: ${marketLimitPerKeyword})`
       );
 
@@ -141,7 +142,10 @@ router.get('/:tweetId/findMarkets', async (req, res) => {
       const limitedMarketsByKeyword = {};
       Object.entries(marketsByKeyword).forEach(([keyword, markets]) => {
          if (Array.isArray(markets)) {
-            limitedMarketsByKeyword[keyword] = markets.slice(0, marketLimitPerKeyword);
+            limitedMarketsByKeyword[keyword] = markets.slice(
+               0,
+               marketLimitPerKeyword
+            );
          } else {
             limitedMarketsByKeyword[keyword] = markets;
          }
@@ -152,7 +156,6 @@ router.get('/:tweetId/findMarkets', async (req, res) => {
       const seenIds = new Set();
 
       Object.values(limitedMarketsByKeyword).forEach((markets) => {
-
          if (Array.isArray(markets)) {
             markets.forEach((market) => {
                if (!seenIds.has(market.id)) {

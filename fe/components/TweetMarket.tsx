@@ -8,7 +8,6 @@ interface TweetMarketProps {
 }
 
 export function TweetMarket({ tweetId, confidence }: TweetMarketProps) {
-   console.log(tweetId);
    const { markets, loading, error } = useMarkets({
       tweetId,
       q: 1,

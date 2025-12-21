@@ -1,70 +1,32 @@
 'use client'
 
+import { useWebSocket } from '@/hooks/useWebSocket'
+
 export default function HotMarkets() {
-  // Mock data for now
-  const hotMarkets = [
-    {
-      id: '1',
-      label: 'Rapid Rise',
-      icon: 'trending_up',
-      iconColor: 'orange',
-      title: 'Solana ETF Approval',
-      change: '+18%',
-      changeTime: 'Last 1h',
-      changeColor: 'green',
-      progress: 75,
-      progressColor: 'from-orange-400 to-red-500',
-      volume: '$2.4M',
-      price: '42¢',
-      borderColor: 'orange'
-    },
-    {
-      id: '2',
-      label: 'Volume Spike',
-      icon: 'show_chart',
-      iconColor: 'blue',
-      title: 'GPT-5 Release Q2',
-      change: '--',
-      changeTime: 'Steady',
-      changeColor: 'gray',
-      progress: 15,
-      progressColor: 'bg-blue-500',
-      volume: 'Vol: +400% (24h)',
-      volumeHighlight: true,
-      price: '12¢',
-      borderColor: 'blue'
-    },
-    {
-      id: '3',
-      label: 'Sell Off',
-      icon: 'trending_down',
-      iconColor: 'red',
-      title: 'ETH Flippening 2024',
-      change: '-12%',
-      changeTime: 'Last 1h',
-      changeColor: 'red',
-      progress: 8,
-      progressColor: 'bg-red-500',
-      volume: '$800k',
-      price: '08¢',
-      borderColor: 'red'
-    },
-    {
-      id: '4',
-      label: 'News Break',
-      icon: 'bolt',
-      iconColor: 'purple',
-      title: 'Super Bowl Halftime Surprise',
-      change: '+5%',
-      changeTime: 'Last 10m',
-      changeColor: 'green',
-      progress: 60,
-      progressColor: 'bg-purple-500',
-      volume: '$1.2M',
-      price: '60¢',
-      borderColor: 'purple'
+  const { hotMarkets: hot, isConnected } = useWebSocket({ enabled: true })
+
+  // Map hot reason to icon and color
+  const getHotReasonIcon = (reason?: string) => {
+    switch (reason) {
+      case 'RAPID_RISE':
+        return 'trending_up'
+      case 'SELL_OFF':
+        return 'trending_down'
+      case 'VOLUME_SPIKE':
+        return 'show_chart'
+      case 'RISING':
+        return 'trending_up'
+      case 'FALLING':
+        return 'trending_down'
+      case 'HIGH_ACTIVITY':
+        return 'local_fire_department'
+      case 'NEWS_BREAK':
+        return 'bolt'
+      case 'VOLATILE':
+      default:
+        return 'show_chart'
     }
-  ]
+  }
 
   return (
     <div className="flex flex-col min-h-[500px] h-full bg-background-light dark:bg-background-dark">
@@ -78,55 +40,102 @@ export default function HotMarkets() {
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="flex size-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]"></span>
-          <span className="text-[10px] font-mono text-orange-500 font-bold hidden xl:block">
-            VOLATILE
-          </span>
+          {isConnected ? (
+            <>
+              <span className="flex size-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.6)]"></span>
+              <span className="text-[10px] font-mono text-orange-500 font-bold hidden xl:block">
+                VOLATILE
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="flex size-2 rounded-full bg-gray-400 animate-pulse"></span>
+              <span className="text-[10px] font-mono text-gray-400 font-bold hidden xl:block">
+                CONNECTING
+              </span>
+            </>
+          )}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-        {hotMarkets.map((market) => (
-          <div
-            key={market.id}
-            className={`group relative flex flex-col gap-2 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:border-${market.borderColor}-500/50 dark:hover:border-${market.borderColor}-500/50 cursor-pointer transition-all`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className={`material-symbols-outlined text-[14px] text-${market.iconColor}-500`}>
-                    {market.icon}
-                  </span>
-                  <span className={`text-[10px] font-bold text-${market.iconColor}-500 uppercase tracking-wider`}>
-                    {market.label}
-                  </span>
-                </div>
-                <h4 className="text-sm font-bold text-[#111418] dark:text-white leading-tight">
-                  {market.title}
-                </h4>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className={`text-sm font-bold text-${market.changeColor}-500`}>
-                  {market.change}
-                </span>
-                <span className="text-[10px] text-gray-500">{market.changeTime}</span>
-              </div>
-            </div>
-            <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full mt-1 overflow-hidden">
-              <div
-                className={`h-full ${market.progressColor} ${market.progressColor.includes('gradient') ? 'shadow-[0_0_10px_rgba(249,115,22,0.5)]' : ''}`}
-                style={{ width: `${market.progress}%` }}
-              ></div>
-            </div>
-            <div className="flex items-center justify-between mt-1 pt-2 border-t border-dashed border-gray-100 dark:border-gray-800">
-              <span className={`text-xs ${market.volumeHighlight ? 'text-blue-400 font-bold' : 'text-gray-500'}`}>
-                {market.volumeHighlight ? market.volume : `Vol: ${market.volume}`}
-              </span>
-              <span className="text-xs font-mono font-bold text-[#111418] dark:text-gray-300">
-                YES: {market.price}
-              </span>
-            </div>
+        {hot.length === 0 && (
+          <div className="p-4 text-center text-sm text-gray-500">
+            Loading hot markets...
           </div>
-        ))}
+        )}
+        {hot.map((market) => {
+          const icon = getHotReasonIcon(market.hotReason)
+          const reasonConfig = market.hotReasonConfig || {
+            label: 'VOLATILE',
+            color: '#8b5cf6',
+            textColor: '#fff',
+          }
+
+          return (
+            <div
+              key={market.id}
+              className="group relative flex flex-col gap-2 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:border-orange-500/50 dark:hover:border-orange-500/50 cursor-pointer transition-all"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="material-symbols-outlined text-[14px]" style={{ color: reasonConfig.color }}>
+                      {icon}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: reasonConfig.color }}
+                    >
+                      {reasonConfig.label}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-[#111418] dark:text-white leading-tight">
+                    {market.question}
+                  </h4>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span
+                    className={`text-sm font-bold ${
+                      market.priceChange1h > 0
+                        ? 'text-green-500'
+                        : market.priceChange1h < 0
+                        ? 'text-red-500'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {market.priceChange1h > 0 ? '+' : ''}
+                    {(market.priceChange1h * 100).toFixed(1)}%
+                  </span>
+                  <span className="text-[10px] text-gray-500">Last 1h</span>
+                </div>
+              </div>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                <div
+                  className="h-full"
+                  style={{
+                    width: `${market.probability}%`,
+                    backgroundColor: reasonConfig.color,
+                  }}
+                ></div>
+              </div>
+              <div className="flex items-center justify-between mt-1 pt-2 border-t border-dashed border-gray-100 dark:border-gray-800">
+                <span
+                  className={`text-xs ${
+                    market.volumeSpike > 100 ? 'font-bold' : 'text-gray-500'
+                  }`}
+                  style={market.volumeSpike > 100 ? { color: reasonConfig.color } : {}}
+                >
+                  {market.volumeSpike > 100
+                    ? `Vol: +${Math.round(market.volumeSpike)}% (24h)`
+                    : `Vol: ${market.volume24hDisplay}`}
+                </span>
+                <span className="text-xs font-mono font-bold text-[#111418] dark:text-gray-300">
+                  YES: {market.yesPriceDisplay}
+                </span>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

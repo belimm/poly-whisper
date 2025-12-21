@@ -35,6 +35,25 @@ class PolymarketService {
     const data = await res.json();
     return data;
   }
+
+  async getPopularMarkets({
+    ascending = true,
+    liquidityMin = 100000,
+    volumeMin = 10000000,
+    includeTag = true
+  } = {}) {
+    const fetchFn = await this._getFetch();
+    const url = `https://gamma-api.polymarket.com/markets?ascending=${ascending}&liquidity_num_min=${liquidityMin}&volume_num_min=${volumeMin}&include_tag=${includeTag}&closed=false`;
+
+    const res = await fetchFn(url, { method: 'GET' });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Failed to fetch popular markets: ${res.status} ${res.statusText} ${text}`);
+    }
+
+    const data = await res.json();
+    return data;
+  }
 }
 
 export default PolymarketService;

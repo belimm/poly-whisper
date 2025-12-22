@@ -10,7 +10,7 @@ const router = Router();
 
 // Middleware to get app locals
 const getAppLocals = (req: Request): AppLocals => {
-  return req.app.locals;
+  return req.app.locals as AppLocals;
 };
 
 // GET /api/markets/catalog/stats - Get catalog statistics

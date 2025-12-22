@@ -33,7 +33,7 @@ export default class MarketMatchingService {
 
   constructor(options: MarketMatchingServiceOptions = {}) {
     // New intelligent matcher (uses catalog + GPT-4 mini)
-    this.intelligentMatcher = options.intelligentMatcher || null;
+    this.intelligentMatcher = options.intelligentMatcher as IntelligentMarketMatcher | null;
 
     // Configuration
     this.log = options.log || console;

@@ -12,9 +12,9 @@ import type {
    MatchingOptions,
    MatcherStats,
    Logger,
-   CompactMarket,
+   MarketMatch,
+   MarketCatalogRow,
 } from '../../types/index.js';
-import { text } from 'stream/consumers';
 
 export default class IntelligentMarketMatcher {
    private catalogService: MarketCatalogService;
@@ -216,27 +216,15 @@ export default class IntelligentMarketMatcher {
       }
 
       // Search catalog for matching markets
-      const allMatches: Array<{
-         market: CompactMarket;
-         relevance_score: number;
-         reasoning: string;
-      }> = [];
+      const allMatches: MarketMatch[] = [];
       keywords.forEach((keyword) => {
          const matches = this.catalogService.searchMarkets(keyword);
          matches.forEach((market) => {
             allMatches.push({
-               market: {
-                  id: market.id,
-                  question: market.question,
-                  category: market.category,
-                  probability: 50,
-                  volume: Math.round(market.volume_num),
-                  tags: (market.tags || []).map((t) =>
-                     typeof t === 'object' ? t.slug : String(t)
-                  ),
-               },
+               market: market, // Use MarketCatalogRow directly
                relevance_score: 0.5, // Default score for keyword match
                reasoning: `Keyword match: "${keyword}"`,
+               keyword: keyword,
             });
          });
       });
@@ -276,31 +264,20 @@ export default class IntelligentMarketMatcher {
     * Deduplicate matches and combine scores
     * @private
     */
-   private _deduplicateMatches(
-      matches: Array<{
-         market: CompactMarket;
-         relevance_score: number;
-         reasoning: string;
-      }>
-   ): Array<{
-      market: CompactMarket;
-      relevance_score: number;
-      reasoning: string;
-   }> {
-      const marketMap = new Map<
-         string,
-         { market: CompactMarket; relevance_score: number; reasoning: string }
-      >();
+   private _deduplicateMatches(matches: MarketMatch[]): MarketMatch[] {
+      const marketMap = new Map<string, MarketMatch>();
 
       matches.forEach((match) => {
-         const existingMatch = marketMap.get(match.market.id);
+         const marketId =
+            match.market.id || (match.market as MarketCatalogRow).id;
+         const existingMatch = marketMap.get(marketId);
 
          if (!existingMatch) {
-            marketMap.set(match.market.id, match);
+            marketMap.set(marketId, match);
          } else {
             // If duplicate, keep higher score
             if (match.relevance_score > existingMatch.relevance_score) {
-               marketMap.set(match.market.id, match);
+               marketMap.set(marketId, match);
             }
          }
       });

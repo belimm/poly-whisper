@@ -31,7 +31,7 @@ export class ClientWebSocketService extends EventEmitter {
       this.wss = new WebSocketServer({
          server,
          path: '/ws',
-         verifyClient: (info) => {
+         verifyClient: (info: any) => {
             try {
                // Get allowed origins
                const allowedOrigins = getFrontendUrl();

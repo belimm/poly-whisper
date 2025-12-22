@@ -109,8 +109,8 @@ import marketRoutes from './routes/marketRoutes.js';
 app.use('/api/markets', marketRoutes);
 
 // Import and register analysis routes
-import analysisRoutes from './routes/analysisRoutes.js';
-app.use('/api/analysis', analysisRoutes);
+// import analysisRoutes from './routes/analysisRoutes.js';
+// app.use('/api/analysis', analysisRoutes);
 
 // Error handling middleware
 app.use(

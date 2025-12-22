@@ -28,17 +28,17 @@ body {
 
 /* Custom Scrollbar Styles */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
   background: #2a3745;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -69,4 +69,5 @@ body {
 .text-color-sweep:hover {
   background-position: 0 0;
 }
+
 

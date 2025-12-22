@@ -11,7 +11,7 @@ export function PolymarketGate({ children }: { children: React.ReactNode }) {
 
    // Wallet not connected → allow normal UI
    if (!isConnected) {
-      return <>{children}</>;
+      return <div className="h-full flex flex-col">{children}</div>;
    }
 
    // Still checking → block silently (no flash)
@@ -25,5 +25,5 @@ export function PolymarketGate({ children }: { children: React.ReactNode }) {
    }
 
    // Connected + profile exists → allow app
-   return <>{children}</>;
+   return <div className="h-full flex flex-col">{children}</div>;
 }

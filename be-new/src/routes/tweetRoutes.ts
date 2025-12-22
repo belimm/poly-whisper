@@ -10,148 +10,156 @@ const router = Router();
 
 // Middleware to get app locals
 const getAppLocals = (req: Request): AppLocals => {
-  return req.app.locals;
+   return req.app.locals;
 };
 
-// GET /api/tweets - Get tweets with pagination
+// GET /api/tweets - Get tweets with pagination (from database)
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { limit = '50', offset = '0' } = req.query;
-    const locals = getAppLocals(req);
-    const { tweetDB } = locals;
-
-    // TODO: Implement tweet fetching from database
-    res.json({
-      tweets: [],
-      limit: parseInt(limit as string, 10),
-      offset: parseInt(offset as string, 10),
-      total: 0,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// GET /api/tweets/with-analysis - Get tweets with analysis
-router.get(
-  '/with-analysis',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
+   try {
       const { limit = '50', offset = '0' } = req.query;
       const locals = getAppLocals(req);
+      const { tweetDB } = locals;
 
-      // Get in-memory tweets (for real-time)
-      const tweets = locals.tweets.slice(
-        parseInt(offset as string, 10),
-        parseInt(offset as string, 10) + parseInt(limit as string, 10)
+      const limitNum = parseInt(limit as string, 10);
+      const offsetNum = parseInt(offset as string, 10);
+
+      const { tweets, total } = await tweetDB.getLatestTweets(
+         limitNum,
+         offsetNum
       );
 
       res.json({
-        tweets,
-        limit: parseInt(limit as string, 10),
-        offset: parseInt(offset as string, 10),
-        total: locals.tweets.length,
+         tweets,
+         limit: limitNum,
+         offset: offsetNum,
+         total,
+         hasMore: offsetNum + limitNum < total,
       });
-    } catch (error) {
+   } catch (error) {
       next(error);
-    }
-  }
-);
+   }
+});
 
-// GET /api/tweets/latest - Get latest tweets
+// GET /api/tweets/with-analysis - Get tweets with analysis (from database)
 router.get(
-  '/latest',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { limit = '10' } = req.query;
-      const locals = getAppLocals(req);
+   '/with-analysis',
+   async (req: Request, res: Response, next: NextFunction) => {
+      try {
+         const { limit = '50', offset = '0' } = req.query;
+         const locals = getAppLocals(req);
+         const { tweetDB } = locals;
 
-      const latestTweets = locals.tweets
-        .slice(0, parseInt(limit as string, 10))
-        .map((tweet) => ({
-          ...tweet,
-          markets: tweet.markets || [],
-        }));
+         const limitNum = parseInt(limit as string, 10);
+         const offsetNum = parseInt(offset as string, 10);
 
-      res.json({
-        tweets: latestTweets,
-        count: latestTweets.length,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
+         const { data: tweets, total } = await tweetDB.getTweetsWithAnalyses(
+            limitNum,
+            offsetNum
+         );
 
-// GET /api/tweets/search - Search tweets
-router.get(
-  '/search',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { q } = req.query;
-      if (!q || typeof q !== 'string') {
-        return res.status(400).json({ error: 'Query parameter "q" is required' });
+         res.json({
+            tweets,
+            limit: limitNum,
+            offset: offsetNum,
+            total,
+            hasMore: offsetNum + limitNum < total,
+         });
+      } catch (error) {
+         next(error);
       }
-
-      const locals = getAppLocals(req);
-      const query = q.toLowerCase();
-
-      const matchingTweets = locals.tweets.filter(
-        (tweet) =>
-          tweet.tweetDetails.text.toLowerCase().includes(query) ||
-          tweet.analysis.keywords.some((keyword) =>
-            keyword.toLowerCase().includes(query)
-          )
-      );
-
-      res.json({
-        tweets: matchingTweets,
-        query: q,
-        count: matchingTweets.length,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
+   }
 );
 
-// GET /api/tweets/statistics - Get tweet statistics
+// GET /api/tweets/latest - Get latest tweets (from database, fallback to memory)
 router.get(
-  '/statistics',
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const locals = getAppLocals(req);
-      const tweets = locals.tweets;
+   '/latest',
+   async (req: Request, res: Response, next: NextFunction) => {
+      try {
+         const { limit = '10' } = req.query;
+         const locals = getAppLocals(req);
+         const { tweetDB } = locals;
 
-      const stats = {
-        total: tweets.length,
-        withAnalysis: tweets.filter((t) => t.analysis).length,
-        sentiment: {
-          positive: tweets.filter((t) => t.analysis.sentiment === 'positive')
-            .length,
-          negative: tweets.filter((t) => t.analysis.sentiment === 'negative')
-            .length,
-          neutral: tweets.filter((t) => t.analysis.sentiment === 'neutral')
-            .length,
-        },
-        withMarkets: tweets.filter((t) => t.markets && t.markets.length > 0)
-          .length,
-        categories: {} as Record<string, number>,
-      };
+         const limitNum = parseInt(limit as string, 10);
 
-      // Count categories
-      tweets.forEach((tweet) => {
-        tweet.analysis.categories.forEach((category) => {
-          stats.categories[category] = (stats.categories[category] || 0) + 1;
-        });
-      });
+         // Try database first, fallback to memory
+         try {
+            const { tweets } = await tweetDB.getLatestTweets(limitNum, 0);
+            return res.json({
+               tweets: tweets.map((tweet) => ({
+                  ...tweet,
+                  markets: tweet.markets || [],
+               })),
+               count: tweets.length,
+               source: 'database',
+            });
+         } catch (error) {
+            // Fallback to in-memory tweets
+            const latestTweets = locals.tweets
+               .slice(0, limitNum)
+               .map((tweet) => ({
+                  ...tweet,
+                  markets: tweet.markets || [],
+               }));
 
-      res.json(stats);
-    } catch (error) {
-      next(error);
-    }
-  }
+            return res.json({
+               tweets: latestTweets,
+               count: latestTweets.length,
+               source: 'memory',
+            });
+         }
+      } catch (error) {
+         next(error);
+      }
+   }
+);
+
+// GET /api/tweets/search - Search tweets (from database)
+router.get(
+   '/search',
+   async (req: Request, res: Response, next: NextFunction) => {
+      try {
+         const { q } = req.query;
+         if (!q || typeof q !== 'string') {
+            return res
+               .status(400)
+               .json({ error: 'Query parameter "q" is required' });
+         }
+
+         const locals = getAppLocals(req);
+         const { tweetDB } = locals;
+
+         const matchingTweets = await tweetDB.searchTweets(q, 50);
+
+         res.json({
+            tweets: matchingTweets,
+            query: q,
+            count: matchingTweets.length,
+         });
+      } catch (error) {
+         next(error);
+      }
+   }
+);
+
+// GET /api/tweets/statistics - Get tweet statistics (from database)
+router.get(
+   '/statistics',
+   async (req: Request, res: Response, next: NextFunction) => {
+      try {
+         const locals = getAppLocals(req);
+         const { tweetDB } = locals;
+
+         const dbStats = await tweetDB.getStatistics();
+
+         res.json({
+            total: dbStats.totalTweets,
+            withAnalysis: dbStats.totalAnalyses,
+            timestamp: new Date().toISOString(),
+         });
+      } catch (error) {
+         next(error);
+      }
+   }
 );
 
 export default router;
-

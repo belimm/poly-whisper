@@ -6,104 +6,106 @@
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import type {
-  TweetAnalysis,
-  MatchingResult,
-  CompactMarket,
-  Logger,
+   TweetAnalysis,
+   MatchingResult,
+   CompactMarket,
+   Logger,
 } from '../../types/index.js';
 
 interface GoogleAIClientOptions {
-  apiKey?: string;
-  model?: string;
-  maxRetries?: number;
-  retryDelay?: number;
+   apiKey?: string;
+   model?: string;
+   maxRetries?: number;
+   retryDelay?: number;
 }
 
 interface OpenAIClientOptions {
-  apiKey?: string;
-  model?: string;
-  maxRetries?: number;
-  retryDelay?: number;
+   apiKey?: string;
+   model?: string;
+   maxRetries?: number;
+   retryDelay?: number;
 }
 
 interface GenerateContentOptions {
-  temperature?: number;
-  topK?: number;
-  topP?: number;
-  maxOutputTokens?: number;
+   temperature?: number;
+   topK?: number;
+   topP?: number;
+   maxOutputTokens?: number;
 }
 
 export class GoogleAIClient {
-  private apiKey: string;
-  private model: string;
-  private maxRetries: number;
-  private retryDelay: number;
-  private genAI: GoogleGenAI;
+   private apiKey: string;
+   private model: string;
+   private maxRetries: number;
+   private retryDelay: number;
+   private genAI: GoogleGenAI;
 
-  constructor(options: GoogleAIClientOptions = {}) {
-    this.apiKey =
-      options.apiKey ||
-      process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_AI_API_KEY ||
-      '';
+   constructor(options: GoogleAIClientOptions = {}) {
+      this.apiKey =
+         options.apiKey ||
+         process.env.GEMINI_API_KEY ||
+         process.env.GOOGLE_AI_API_KEY ||
+         '';
 
-    this.model = options.model || 'gemini-2.5-flash';
-    this.maxRetries = options.maxRetries || 3;
-    this.retryDelay = options.retryDelay || 1000;
+      this.model = options.model || 'gemini-2.5-flash';
+      this.maxRetries = options.maxRetries || 3;
+      this.retryDelay = options.retryDelay || 1000;
 
-    if (!this.apiKey) {
-      throw new Error(
-        'Google AI API key is required. Set GEMINI_API_KEY or GOOGLE_AI_API_KEY environment variable.'
-      );
-    }
-
-    // Initialize the Google GenAI client
-    this.genAI = new GoogleGenAI({ apiKey: this.apiKey });
-  }
-
-  async generateContent(
-    prompt: string,
-    options: GenerateContentOptions = {}
-  ): Promise<string> {
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-      try {
-        const response = await this.genAI.models.generateContent({
-          model: this.model,
-          contents: prompt,
-          generationConfig: {
-            temperature: options.temperature || 0.1,
-            topK: options.topK || 40,
-            topP: options.topP || 0.95,
-            maxOutputTokens: options.maxOutputTokens || 1024,
-          },
-        });
-
-        return response.text;
-      } catch (error) {
-        lastError = error as Error;
-        console.warn(
-          `Google AI request attempt ${attempt} failed:`,
-          (error as Error).message
-        );
-
-        if (attempt < this.maxRetries) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, this.retryDelay * attempt)
-          );
-        }
+      if (!this.apiKey) {
+         throw new Error(
+            'Google AI API key is required. Set GEMINI_API_KEY or GOOGLE_AI_API_KEY environment variable.'
+         );
       }
-    }
 
-    throw new Error(
-      `Google AI request failed after ${this.maxRetries} attempts: ${lastError?.message || 'Unknown error'}`
-    );
-  }
+      // Initialize the Google GenAI client
+      this.genAI = new GoogleGenAI({ apiKey: this.apiKey });
+   }
 
-  // Specialized method for tweet analysis
-  async analyzeTweet(tweetText: string): Promise<TweetAnalysis> {
-    const prompt = `
+   async generateContent(
+      prompt: string,
+      options: GenerateContentOptions = {}
+   ): Promise<string> {
+      let lastError: Error | null = null;
+
+      for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+         try {
+            const response = await this.genAI.models.generateContent({
+               model: this.model,
+               contents: prompt,
+               generationConfig: {
+                  temperature: options.temperature || 0.1,
+                  topK: options.topK || 40,
+                  topP: options.topP || 0.95,
+                  maxOutputTokens: options.maxOutputTokens || 1024,
+               },
+            });
+
+            return response.text;
+         } catch (error) {
+            lastError = error as Error;
+            console.warn(
+               `Google AI request attempt ${attempt} failed:`,
+               (error as Error).message
+            );
+
+            if (attempt < this.maxRetries) {
+               await new Promise((resolve) =>
+                  setTimeout(resolve, this.retryDelay * attempt)
+               );
+            }
+         }
+      }
+
+      throw new Error(
+         `Google AI request failed after ${this.maxRetries} attempts: ${
+            lastError?.message || 'Unknown error'
+         }`
+      );
+   }
+
+   // Specialized method for tweet analysis
+   async analyzeTweet(tweetText: string): Promise<TweetAnalysis> {
+      const prompt = `
   Analyze this tweet to extract ONLY high-relevance prediction market opportunities on Polymarkets.
 
   **CRITICAL FILTERING RULES - STRICT REJECTION OF IRRELEVANT WORDS:**
@@ -151,57 +153,57 @@ export class GoogleAIClient {
     "reasoning": "Brief explanation of market relevance"
   }`;
 
-    try {
-      const response = await this.generateContent(prompt, {
-        temperature: 0.1,
-      });
+      try {
+         const response = await this.generateContent(prompt, {
+            temperature: 0.1,
+         });
 
-      // Try to parse JSON response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]) as TweetAnalysis;
+         // Try to parse JSON response
+         const jsonMatch = response.match(/\{[\s\S]*\}/);
+         if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]) as TweetAnalysis;
+         }
+
+         // Fallback if JSON parsing fails
+         return {
+            sentiment: 'neutral',
+            sentiment_score: 0.5,
+            keywords: this._extractFallbackKeywords(tweetText),
+            categories: [],
+            summary: 'Unable to generate summary - LLM parsing failed',
+            confidence: 0.1,
+            reasoning: 'Failed to parse LLM response, using fallback',
+         };
+      } catch (error) {
+         console.error('LLM tweet analysis failed:', (error as Error).message);
+
+         // Return fallback analysis
+         return {
+            sentiment: 'neutral',
+            sentiment_score: 0.5,
+            keywords: this._extractFallbackKeywords(tweetText),
+            categories: [],
+            summary: 'Unable to generate summary - LLM service unavailable',
+            confidence: 0.0,
+            reasoning: `LLM analysis failed: ${(error as Error).message}`,
+         };
       }
+   }
 
-      // Fallback if JSON parsing fails
-      return {
-        sentiment: 'neutral',
-        sentiment_score: 0.5,
-        keywords: this._extractFallbackKeywords(tweetText),
-        categories: [],
-        summary: 'Unable to generate summary - LLM parsing failed',
-        confidence: 0.1,
-        reasoning: 'Failed to parse LLM response, using fallback',
-      };
-    } catch (error) {
-      console.error('LLM tweet analysis failed:', (error as Error).message);
+   private _extractFallbackKeywords(text: string): string[] {
+      // Smart fallback - extract ONLY proper nouns and ticker symbols
+      // This is a last resort when LLM fails - be conservative to avoid garbage
 
-      // Return fallback analysis
-      return {
-        sentiment: 'neutral',
-        sentiment_score: 0.5,
-        keywords: this._extractFallbackKeywords(tweetText),
-        categories: [],
-        summary: 'Unable to generate summary - LLM service unavailable',
-        confidence: 0.0,
-        reasoning: `LLM analysis failed: ${(error as Error).message}`,
-      };
-    }
-  }
+      // Extract capitalized words/phrases (likely proper nouns: "Elon", "Apple", "Bitcoin")
+      const properNouns = text.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
 
-  private _extractFallbackKeywords(text: string): string[] {
-    // Smart fallback - extract ONLY proper nouns and ticker symbols
-    // This is a last resort when LLM fails - be conservative to avoid garbage
+      // Extract all-caps ticker symbols (1-5 chars: "TSLA", "BTC", "DOGE")
+      const tickers = text.match(/\b[A-Z]{1,5}\b/g) || [];
 
-    // Extract capitalized words/phrases (likely proper nouns: "Elon", "Apple", "Bitcoin")
-    const properNouns = text.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
-
-    // Extract all-caps ticker symbols (1-5 chars: "TSLA", "BTC", "DOGE")
-    const tickers = text.match(/\b[A-Z]{1,5}\b/g) || [];
-
-    // Combine and deduplicate, limit to 5
-    const combined = [...new Set([...properNouns, ...tickers])];
-    return combined.slice(0, 5);
-  }
+      // Combine and deduplicate, limit to 5
+      const combined = [...new Set([...properNouns, ...tickers])];
+      return combined.slice(0, 5);
+   }
 }
 
 /**
@@ -209,49 +211,49 @@ export class GoogleAIClient {
  * Optimized for intelligent market matching with catalog
  */
 export class OpenAIClient {
-  private apiKey: string;
-  private model: string;
-  private maxRetries: number;
-  private retryDelay: number;
-  private openai: OpenAI;
+   private apiKey: string;
+   private model: string;
+   private maxRetries: number;
+   private retryDelay: number;
+   private openai: OpenAI;
 
-  constructor(options: OpenAIClientOptions = {}) {
-    this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || '';
-    this.model = options.model || 'gpt-4o-mini'; // GPT-4o mini is the latest fast model
-    this.maxRetries = options.maxRetries || 3;
-    this.retryDelay = options.retryDelay || 1000;
+   constructor(options: OpenAIClientOptions = {}) {
+      this.apiKey = options.apiKey || process.env.OPENAI_API_KEY || '';
+      this.model = options.model || 'gpt-4o-mini'; // GPT-4o mini is the latest fast model
+      this.maxRetries = options.maxRetries || 3;
+      this.retryDelay = options.retryDelay || 1000;
 
-    if (!this.apiKey) {
-      throw new Error(
-        'OpenAI API key is required. Set OPENAI_API_KEY environment variable.'
-      );
-    }
+      if (!this.apiKey) {
+         throw new Error(
+            'OpenAI API key is required. Set OPENAI_API_KEY environment variable.'
+         );
+      }
 
-    // Initialize OpenAI client
-    this.openai = new OpenAI({
-      apiKey: this.apiKey,
-    });
-  }
+      // Initialize OpenAI client
+      this.openai = new OpenAI({
+         apiKey: this.apiKey,
+      });
+   }
 
-  /**
-   * Match tweet to relevant markets from catalog
-   * Uses GPT-4 mini to intelligently understand tweet context and find best matches
-   */
-  async matchTweetToMarkets(
-    tweetText: string,
-    marketCatalog: CompactMarket[],
-    maxMatches = 5
-  ): Promise<MatchingResult> {
-    // Build a compact catalog for the prompt (to reduce tokens)
-    const compactCatalog = marketCatalog.slice(0, 200).map((m, idx) => ({
-      idx, // Index for reference
-      q: m.question, // Question
-      c: m.category, // Category
-      t: m.tags || [], // Tags
-      v: Math.round(m.volume || 0), // Volume
-    }));
+   /**
+    * Match tweet to relevant markets from catalog
+    * Uses GPT-4 mini to intelligently understand tweet context and find best matches
+    */
+   async matchTweetToMarkets(
+      tweetText: string,
+      marketCatalog: CompactMarket[],
+      maxMatches = 5
+   ): Promise<MatchingResult> {
+      // Build a compact catalog for the prompt (to reduce tokens)
+      const compactCatalog = marketCatalog.slice(0, 200).map((m, idx) => ({
+         idx, // Index for reference
+         q: m.question, // Question
+         c: m.category, // Category
+         t: m.tags || [], // Tags
+         v: Math.round(m.volume || 0), // Volume
+      }));
 
-    const prompt = `You are an expert at matching tweets to prediction markets on Polymarket.
+      const prompt = `You are an expert at matching tweets to prediction markets on Polymarket.
 
 TWEET:
 "${tweetText}"
@@ -292,73 +294,76 @@ If no markets are relevant (all below 0.5), return empty matches array.
 
 RESPOND WITH VALID JSON ONLY:`;
 
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: this.model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert at matching tweets to prediction markets. Always respond with valid JSON.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.2, // Low temperature for consistent results
-        max_tokens: 1000,
-        response_format: { type: 'json_object' }, // Force JSON response
-      });
+      try {
+         const response = await this.openai.chat.completions.create({
+            model: this.model,
+            messages: [
+               {
+                  role: 'system',
+                  content:
+                     'You are an expert at matching tweets to prediction markets. Always respond with valid JSON.',
+               },
+               {
+                  role: 'user',
+                  content: prompt,
+               },
+            ],
+            temperature: 0.2, // Low temperature for consistent results
+            max_tokens: 1000,
+            response_format: { type: 'json_object' }, // Force JSON response
+         });
 
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error('No content in OpenAI response');
+         const content = response.choices[0]?.message?.content;
+         if (!content) {
+            throw new Error('No content in OpenAI response');
+         }
+
+         const result = JSON.parse(content) as {
+            matches: Array<{
+               market_idx: number;
+               relevance_score: number;
+               reasoning: string;
+            }>;
+            tweet_summary: string;
+            confidence: number;
+         };
+
+         // Map indices back to full market objects
+         const matchedMarkets = (result.matches || []).map((match) => ({
+            market: marketCatalog[match.market_idx],
+            relevance_score: match.relevance_score,
+            reasoning: match.reasoning,
+         }));
+
+         return {
+            success: true,
+            matches: matchedMarkets,
+            tweet_summary: result.tweet_summary,
+            confidence: result.confidence,
+            source: 'intelligent-gpt4-mini',
+         };
+      } catch (error) {
+         console.error(
+            'OpenAI market matching failed:',
+            (error as Error).message
+         );
+         return {
+            success: false,
+            matches: [],
+            tweet_summary: 'Analysis failed',
+            confidence: 0,
+            error: (error as Error).message,
+            source: 'intelligent-gpt4-mini',
+         };
       }
+   }
 
-      const result = JSON.parse(content) as {
-        matches: Array<{
-          market_idx: number;
-          relevance_score: number;
-          reasoning: string;
-        }>;
-        tweet_summary: string;
-        confidence: number;
-      };
-
-      // Map indices back to full market objects
-      const matchedMarkets = (result.matches || []).map((match) => ({
-        market: marketCatalog[match.market_idx],
-        relevance_score: match.relevance_score,
-        reasoning: match.reasoning,
-      }));
-
-      return {
-        success: true,
-        matches: matchedMarkets,
-        tweet_summary: result.tweet_summary,
-        confidence: result.confidence,
-        source: 'intelligent-gpt4-mini',
-      };
-    } catch (error) {
-      console.error('OpenAI market matching failed:', (error as Error).message);
-      return {
-        success: false,
-        matches: [],
-        tweet_summary: 'Analysis failed',
-        confidence: 0,
-        error: (error as Error).message,
-        source: 'intelligent-gpt4-mini',
-      };
-    }
-  }
-
-  /**
-   * Analyze tweet (compatible with GoogleAIClient interface)
-   * This is for backwards compatibility
-   */
-  async analyzeTweet(tweetText: string): Promise<TweetAnalysis> {
-    const prompt = `Analyze this tweet for Polymarket relevance:
+   /**
+    * Analyze tweet (compatible with GoogleAIClient interface)
+    * This is for backwards compatibility
+    */
+   async analyzeTweet(tweetText: string): Promise<TweetAnalysis> {
+      const prompt = `Analyze this tweet for Polymarket relevance:
 
 "${tweetText}"
 
@@ -383,45 +388,47 @@ Respond with JSON only:
   "reasoning": "Why this is relevant"
 }`;
 
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: this.model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert at analyzing tweets for prediction market relevance. Always respond with valid JSON.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 500,
-        response_format: { type: 'json_object' },
-      });
+      try {
+         const response = await this.openai.chat.completions.create({
+            model: this.model,
+            messages: [
+               {
+                  role: 'system',
+                  content:
+                     'You are an expert at analyzing tweets for prediction market relevance. Always respond with valid JSON.',
+               },
+               {
+                  role: 'user',
+                  content: prompt,
+               },
+            ],
+            temperature: 0.1,
+            max_tokens: 500,
+            response_format: { type: 'json_object' },
+         });
 
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error('No content in OpenAI response');
+         const content = response.choices[0]?.message?.content;
+         if (!content) {
+            throw new Error('No content in OpenAI response');
+         }
+
+         return JSON.parse(content) as TweetAnalysis;
+      } catch (error) {
+         console.error(
+            'OpenAI tweet analysis failed:',
+            (error as Error).message
+         );
+         return {
+            sentiment: 'neutral',
+            sentiment_score: 0.5,
+            keywords: [],
+            categories: [],
+            summary: 'Analysis failed',
+            confidence: 0,
+            reasoning: `OpenAI analysis failed: ${(error as Error).message}`,
+         };
       }
-
-      return JSON.parse(content) as TweetAnalysis;
-    } catch (error) {
-      console.error('OpenAI tweet analysis failed:', (error as Error).message);
-      return {
-        sentiment: 'neutral',
-        sentiment_score: 0.5,
-        keywords: [],
-        categories: [],
-        summary: 'Analysis failed',
-        confidence: 0,
-        reasoning: `OpenAI analysis failed: ${(error as Error).message}`,
-      };
-    }
-  }
+   }
 }
 
-export default GoogleAIClient;
-
+export default OpenAIClient;

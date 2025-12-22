@@ -166,6 +166,7 @@ export interface EnrichedTweet {
    analysis: TweetAnalysis;
    enrichedAt: string;
    markets?: MarketMatch[];
+   analysisRefreshedAt?: string; // Timestamp when analysis was last refreshed
 }
 
 // ============================================================================
@@ -387,14 +388,29 @@ export interface AppLocals {
    intelligentMatcher: IntelligentMarketMatcher;
 }
 
-// Placeholder types for services that will be converted
+// Service interfaces
 export interface TweetAnalyzer {
    analyzeWithLLM: (text: string) => Promise<TweetAnalysis>;
+   analyzeTweet: (text: string) => TweetAnalysis;
 }
 
 export interface TweetDatabaseService {
-   // Will be defined when converted
-   [key: string]: unknown;
+   insertTweet: (enrichedTweet: EnrichedTweet) => Promise<unknown>;
+   insertAnalysis: (
+      tweetId: string,
+      analysis: TweetAnalysis
+   ) => Promise<unknown>;
+   getLatestTweets: (
+      limit?: number,
+      offset?: number
+   ) => Promise<{ tweets: EnrichedTweet[]; total: number }>;
+   getTweetsWithAnalyses: (
+      limit?: number,
+      offset?: number
+   ) => Promise<{ data: EnrichedTweet[]; total: number }>;
+   getTweetWithAnalysisById: (tweetId: string) => Promise<EnrichedTweet>;
+   searchTweets: (keyword: string, limit?: number) => Promise<EnrichedTweet[]>;
+   getStatistics: () => Promise<{ totalTweets: number; totalAnalyses: number }>;
 }
 
 export interface TweetProcessingQueue {

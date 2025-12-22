@@ -16,6 +16,8 @@ import type { EnrichedTweet, AppLocals, TweetDetails } from './types/index.js';
 import MarketCatalogService from './services/market/marketCatalogService.js';
 import IntelligentMarketMatcher from './services/market/intelligentMarketMatcher.js';
 import MarketMatchingService from './services/market/marketMatchingService.js';
+import TweetDatabaseService from './services/database/tweetDatabaseService.js';
+import TweetAnalyzer from './domain/tweetAnalyzer.js';
 
 // Load environment variables
 dotenv.config();
@@ -31,6 +33,8 @@ const MAX_TWEETS_STORED = 1000;
 
 const twitterWS = new TwitterWebSocketService();
 const clientWS = new ClientWebSocketService();
+const tweetAnalyzer = new TweetAnalyzer();
+const tweetDB = new TweetDatabaseService();
 
 // TODO: Convert these to TypeScript
 // const tweetAnalyzer = new TweetAnalyzer();
@@ -82,8 +86,8 @@ const appLocals: AppLocals = {
    tweets,
    twitterWS,
    clientWS,
-   tweetAnalyzer: {} as any, // TODO: Replace with actual TweetAnalyzer
-   tweetDB: {} as any, // TODO: Replace with actual TweetDatabaseService
+   tweetAnalyzer,
+   tweetDB,
    tweetQueue: {} as any, // TODO: Replace with actual TweetProcessingQueue
    marketMatcher,
    marketCatalogService,
@@ -118,7 +122,7 @@ twitterWS.on('handshake', () => {
 //   // Handle enriched tweets
 // });
 
-// Temporary tweet handler until pipeline is set up
+// Tweet processing pipeline: Analyze → Match Markets → Save to DB → Broadcast
 twitterWS.on('tweet', async (tweet: TweetDetails) => {
    try {
       // Skip replies and retweets
@@ -128,31 +132,68 @@ twitterWS.on('tweet', async (tweet: TweetDetails) => {
 
       devLog('📧 TWEET received:', tweet.tweetId);
 
-      // TODO: Analyze tweet and match markets
-      // For now, create a basic enriched tweet
+      // Step 1: Analyze tweet using LLM
+      const analysis = await tweetAnalyzer.analyzeWithLLM(tweet.text);
+      devLog('✅ Tweet analyzed:', {
+         keywords: analysis.keywords,
+         sentiment: analysis.sentiment,
+      });
+
+      // Step 2: Match to markets using intelligent matcher
+      let markets: EnrichedTweet['markets'] = [];
+      try {
+         const matchResult = await marketMatcher.matchTweet(
+            {
+               tweetDetails: tweet,
+               analysis,
+               enrichedAt: new Date().toISOString(),
+            },
+            { maxMatches: 5, minRelevanceScore: 0.5 }
+         );
+
+         if (matchResult.success && matchResult.matches.length > 0) {
+            markets = matchResult.matches.map((match) => ({
+               market: match.market,
+               relevance_score: match.relevance_score,
+               reasoning: match.reasoning,
+            }));
+            devLog(
+               `✅ Found ${markets.length} matching markets for tweet ${tweet.tweetId}`
+            );
+         }
+      } catch (error: any) {
+         errorLog('⚠️  Market matching failed:', error.message);
+         // Continue without markets - tweet will still be saved
+      }
+
+      // Step 3: Create enriched tweet
       const enriched: EnrichedTweet = {
          tweetDetails: tweet,
-         analysis: {
-            sentiment: 'neutral',
-            sentiment_score: 0.5,
-            keywords: [],
-            categories: [],
-         },
+         analysis,
+         markets,
          enrichedAt: new Date().toISOString(),
       };
 
-      // Store in memory
+      // Step 4: Save to database (for persistence and recovery)
+      try {
+         const dbTweet = await tweetDB.insertTweet(enriched);
+         await tweetDB.insertAnalysis(dbTweet.id, analysis, markets);
+         devLog('✅ Tweet saved to database:', dbTweet.id);
+      } catch (error: any) {
+         errorLog('⚠️  Failed to save tweet to database:', error.message);
+         // Continue - tweet will still be broadcast
+      }
+
+      // Step 5: Store in memory (for quick access)
       tweets.unshift(enriched);
       if (tweets.length > MAX_TWEETS_STORED) {
          tweets.pop();
       }
 
-      // Broadcast to frontend clients
+      // Step 6: Broadcast to frontend clients via WebSocket
       clientWS.broadcastTweet(enriched);
-
-      // TODO: Add to processing queue for database persistence
-   } catch (error) {
-      errorLog('Error processing tweet:', error);
+   } catch (error: any) {
+      errorLog('❌ Error processing tweet:', error.message);
    }
 });
 

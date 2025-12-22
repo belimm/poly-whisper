@@ -1,6 +1,6 @@
 {
    "name": "poly-whisper-be",
-   "version": "2.0.0",
+   "version": "2.0.1",
    "type": "module",
    "description": "Poly-Whisper Backend - TypeScript implementation with LLM-based market matching",
    "main": "dist/index.js",

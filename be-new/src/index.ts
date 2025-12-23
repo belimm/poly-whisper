@@ -132,27 +132,48 @@ twitterWS.on('tweet', async (tweet: TweetDetails) => {
 
       devLog('📧 TWEET received:', tweet.tweetId);
 
-      // Step 1: Analyze tweet using LLM
-      const analysis = await tweetAnalyzer.analyzeWithLLM(tweet.text);
-      devLog('✅ Tweet analyzed:', {
-         keywords: analysis.keywords,
-         sentiment: analysis.sentiment,
-      });
-
-      // Step 2: Match to markets using intelligent matcher
-      let markets: EnrichedTweet['markets'] = [];
-      try {
-         const matchResult = await marketMatcher.matchTweet(
+      // Step 1 & 2: Run analysis and market matching in PARALLEL
+      // Market matching only needs tweet text, not analysis results
+      const [analysis, matchResult] = await Promise.allSettled([
+         tweetAnalyzer.analyzeWithLLM(tweet.text),
+         marketMatcher.matchTweet(
             {
                tweetDetails: tweet,
-               analysis,
+               analysis: null, // Not needed for matching
                enrichedAt: new Date().toISOString(),
             },
             { maxMatches: 5, minRelevanceScore: 0.5 }
-         );
+         ),
+      ]);
 
-         if (matchResult.success && matchResult.matches.length > 0) {
-            markets = matchResult.matches.map((match) => ({
+      // Extract analysis result
+      const analysisResult =
+         analysis.status === 'fulfilled'
+            ? analysis.value
+            : {
+                 sentiment: 'neutral' as const,
+                 sentiment_score: 0.5,
+                 keywords: [] as string[],
+                 categories: [] as string[],
+                 summary: 'Analysis failed',
+                 confidence: 0.1,
+                 reasoning: analysis.reason?.message || 'Analysis failed',
+              };
+
+      if (analysis.status === 'fulfilled') {
+         devLog('✅ Tweet analyzed:', {
+            keywords: analysisResult.keywords,
+            sentiment: analysisResult.sentiment,
+         });
+      } else {
+         errorLog('⚠️  Tweet analysis failed:', analysis.reason?.message);
+      }
+
+      // Extract market matching result
+      let markets: EnrichedTweet['markets'] = [];
+      if (matchResult.status === 'fulfilled' && matchResult.value.success) {
+         if (matchResult.value.matches.length > 0) {
+            markets = matchResult.value.matches.map((match) => ({
                market: match.market,
                relevance_score: match.relevance_score,
                reasoning: match.reasoning,
@@ -161,15 +182,19 @@ twitterWS.on('tweet', async (tweet: TweetDetails) => {
                `✅ Found ${markets.length} matching markets for tweet ${tweet.tweetId}`
             );
          }
-      } catch (error: any) {
-         errorLog('⚠️  Market matching failed:', error.message);
+      } else {
+         const errorMsg =
+            matchResult.status === 'rejected'
+               ? matchResult.reason?.message
+               : matchResult.value.error || 'Market matching failed';
+         errorLog('⚠️  Market matching failed:', errorMsg);
          // Continue without markets - tweet will still be saved
       }
 
       // Step 3: Create enriched tweet
       const enriched: EnrichedTweet = {
          tweetDetails: tweet,
-         analysis,
+         analysis: analysisResult,
          markets,
          enrichedAt: new Date().toISOString(),
       };
@@ -177,7 +202,7 @@ twitterWS.on('tweet', async (tweet: TweetDetails) => {
       // Step 4: Save to database (for persistence and recovery)
       try {
          const dbTweet = await tweetDB.insertTweet(enriched);
-         await tweetDB.insertAnalysis(dbTweet.id, analysis, markets);
+         await tweetDB.insertAnalysis(dbTweet.id, analysisResult, markets);
          devLog('✅ Tweet saved to database:', dbTweet.id);
       } catch (error: any) {
          errorLog('⚠️  Failed to save tweet to database:', error.message);

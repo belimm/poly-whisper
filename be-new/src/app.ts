@@ -6,7 +6,7 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { getFrontendUrl } from './utils/util.js';
+import { getFrontendUrl, isDev } from './utils/util.js';
 import tweetRoutes from './routes/tweetRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import type { AppLocals } from './types/index.js';
@@ -15,9 +15,34 @@ import type { AppLocals } from './types/index.js';
 const app: Express = express();
 
 // CORS configuration
+const allowedOrigins = getFrontendUrl();
 app.use(
    cors({
-      origin: getFrontendUrl(),
+      origin: (origin, callback) => {
+         // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
+         if (!origin) {
+            return callback(null, true);
+         }
+
+         // Check if origin is in allowed list
+         if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+         }
+
+         // In development, also allow localhost with any port
+         if (isDev() && origin.startsWith('http://localhost:')) {
+            return callback(null, true);
+         }
+
+         // Reject other origins
+         callback(
+            new Error(
+               `CORS: Origin ${origin} is not allowed. Allowed origins: ${allowedOrigins.join(
+                  ', '
+               )}`
+            )
+         );
+      },
       credentials: true,
       optionsSuccessStatus: 200,
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Custom-Header'],

@@ -121,6 +121,10 @@ export default class MarketCatalogService {
       this.log.info('⏹️  Market Catalog Service stopped');
    }
 
+   getCatalogSize(): number {
+      return this.cache.length;
+   }
+
    /**
     * Load cache from Supabase database
     */

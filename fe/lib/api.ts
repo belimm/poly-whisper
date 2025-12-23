@@ -20,13 +20,19 @@ class PolyWhisperAPI {
          throw new Error(`HTTP ${response.status}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('Fetched tweets:', data);
+      return data;
    }
 
    /**
     * Find Polymarket markets for a specific tweet
     */
-   async findMarketsForTweet(tweetId: string, q?: number, qc?: number): Promise<MarketsResponse> {
+   async findMarketsForTweet(
+      tweetId: string,
+      q?: number,
+      qc?: number
+   ): Promise<MarketsResponse> {
       const queryParams = new URLSearchParams();
 
       if (q !== undefined) {
@@ -38,7 +44,11 @@ class PolyWhisperAPI {
       }
 
       const queryString = queryParams.toString();
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/${tweetId}/findMarkets${queryString ? `?${queryString}` : ''}`;
+      const url = `${
+         process.env.NEXT_PUBLIC_API_URL
+      }/api/tweets/${tweetId}/findMarkets${
+         queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await fetch(url);
 

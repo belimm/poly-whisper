@@ -11,7 +11,7 @@ interface ClientWebSocketEvents {
   clientConnected: (data: { clientId: string }) => void;
 }
 import crypto from 'crypto';
-import { getFrontendUrl } from '../../utils/util.js';
+import { getFrontendUrl, isDev } from '../../utils/util.js';
 import { devLog } from '../../utils/logger.js';
 import type {
    ClientWebSocketMessage,
@@ -39,20 +39,33 @@ export class ClientWebSocketService extends EventEmitter {
                // Get the origin from the request
                const origin = info.origin || info.req.headers.origin;
 
-               // Check if origin is allowed
-               if (origin && !allowedOrigins.includes(origin)) {
-                  console.warn(
-                     `🚫 WebSocket connection rejected from unauthorized origin: ${origin}`
-                  );
-                  return false;
+               // Allow requests with no origin (like Postman or same-origin)
+               if (!origin) {
+                  devLog('✅ WebSocket connection approved (no origin)');
+                  return true;
                }
 
-               console.log(
-                  `✅ WebSocket connection approved from origin: ${
-                     origin || 'unknown'
-                  }`
+               // Check if origin is in allowed list
+               if (allowedOrigins.includes(origin)) {
+                  devLog(
+                     `✅ WebSocket connection approved from origin: ${origin}`
+                  );
+                  return true;
+               }
+
+               // In development, also allow localhost with any port
+               if (isDev() && origin.startsWith('http://localhost:')) {
+                  devLog(
+                     `✅ WebSocket connection approved from localhost origin: ${origin}`
+                  );
+                  return true;
+               }
+
+               // Reject other origins
+               console.warn(
+                  `🚫 WebSocket connection rejected from unauthorized origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`
                );
-               return true;
+               return false;
             } catch (error) {
                console.error('WebSocket verification error:', error);
                return false;
@@ -94,10 +107,10 @@ export class ClientWebSocketService extends EventEmitter {
                connectedAt: new Date().toISOString(),
             });
 
-            console.log(
+            devLog(
                `✅ Client connected: ${clientId} from ${origin} (${ip})`
             );
-            console.log(`📊 Total connected clients: ${this.clients.size}`);
+            devLog(`📊 Total connected clients: ${this.clients.size}`);
 
             // Send welcome message
             ws.send(
@@ -130,7 +143,7 @@ export class ClientWebSocketService extends EventEmitter {
             // Handle client disconnect
             ws.on('close', () => {
                this.clients.delete(clientId);
-               console.log(`📊 Total connected clients: ${this.clients.size}`);
+               devLog(`📊 Total connected clients: ${this.clients.size}`);
             });
 
             // Handle errors
@@ -147,7 +160,7 @@ export class ClientWebSocketService extends EventEmitter {
       });
 
       this.isRunning = true;
-      console.log('🔌 Frontend WebSocket server started on /ws');
+      devLog('🔌 Frontend WebSocket server started on /ws');
       return this.wss;
    }
 

@@ -93,7 +93,7 @@ export default class IntelligentMarketMatcher {
          }
 
          // Get compact catalog for LLM (reduces token usage)
-         const catalog = this.catalogService.getCompactCatalog(500);
+         const catalog = this.catalogService.getCompactCatalog(this.catalogService.getCatalogSize());
 
          if (catalog.length === 0) {
             this.log.warn('⚠️  Market catalog is empty');

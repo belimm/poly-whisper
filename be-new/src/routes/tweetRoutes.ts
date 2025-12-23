@@ -56,7 +56,6 @@ router.get(
             limitNum,
             offsetNum
          );
-
          res.json({
             tweets,
             limit: limitNum,

@@ -155,8 +155,10 @@ export default function TheWire({
       return () => window.removeEventListener('resize', checkMobile)
    }, [])
 
-   const displayedTweets = isMounted && isMobile ? tweets.slice(0, visibleCount) : tweets
-   const showLoadMore = isMounted && isMobile ? (visibleCount < tweets.length || hasMore) : hasMore
+   const displayedTweets =
+      isMounted && isMobile ? tweets.slice(0, visibleCount) : tweets;
+   const showLoadMore =
+      isMounted && isMobile ? visibleCount < tweets.length || hasMore : hasMore;
 
    const handleLoadMore = () => {
       if (isMobile && visibleCount < tweets.length) {
@@ -174,11 +176,16 @@ export default function TheWire({
                title="The Wire"
                icon="chat"
                statusBadge={
-                  <button className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded">
+                  <div
+                     className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded cursor-pointer"
+                     onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Add settings/filter functionality
+                     }}>
                      <span className="material-symbols-outlined text-gray-500 text-[18px]">
                         tune
                      </span>
-                  </button>
+                  </div>
                }>
                <div className="p-4 flex flex-col gap-4">
                   {loading && tweets.length === 0 && (

@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { EnrichedTweet } from '@/lib/types';
+import MobileSection from './MobileSection';
 
 interface TheWireProps {
    tweets: EnrichedTweet[];
@@ -139,61 +141,148 @@ export default function TheWire({
    hasMore,
    loadMore,
 }: TheWireProps) {
+   const [visibleCount, setVisibleCount] = useState(5)
+   const [isMobile, setIsMobile] = useState(false)
+   const [isMounted, setIsMounted] = useState(false)
+
+   useEffect(() => {
+      setIsMounted(true)
+      const checkMobile = () => {
+         setIsMobile(window.innerWidth < 768)
+      }
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
+      return () => window.removeEventListener('resize', checkMobile)
+   }, [])
+
+   const displayedTweets =
+      isMounted && isMobile ? tweets.slice(0, visibleCount) : tweets;
+   const showLoadMore =
+      isMounted && isMobile ? visibleCount < tweets.length || hasMore : hasMore;
+
+   const handleLoadMore = () => {
+      if (isMobile && visibleCount < tweets.length) {
+         setVisibleCount(prev => prev + 5)
+      } else {
+         loadMore()
+      }
+   };
+
    return (
-      <div className="flex flex-col min-h-[500px] h-full bg-background-light dark:bg-background-dark">
-         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white dark:bg-surface-dark border-b border-[#e5e7eb] dark:border-border-dark">
-            <div className="flex items-center gap-2">
-               <span className="material-symbols-outlined text-primary text-[20px]">
-                  chat
-               </span>
-               <h3 className="text-sm font-bold tracking-wider uppercase text-[#111418] dark:text-gray-100">
-                  The Wire
-               </h3>
-            </div>
-            <div className="flex gap-2">
-               <button className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded">
-                  <span className="material-symbols-outlined text-gray-500 text-[18px]">
-                     tune
-                  </span>
-               </button>
-            </div>
+      <div className="flex flex-col h-full min-h-0">
+         {/* Mobile Version with Accordion */}
+         <div className="flex flex-col h-full min-h-0 bg-background-light dark:bg-background-dark md:hidden">
+            <MobileSection
+               title="The Wire"
+               icon="chat"
+               statusBadge={
+                  <div
+                     className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded cursor-pointer"
+                     onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Add settings/filter functionality
+                     }}>
+                     <span className="material-symbols-outlined text-gray-500 text-[18px]">
+                        tune
+                     </span>
+                  </div>
+               }>
+               <div className="p-4 flex flex-col gap-4">
+                  {loading && tweets.length === 0 && (
+                     <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500">Loading tweets...</p>
+                     </div>
+                  )}
+
+                  {error && (
+                     <div className="flex items-center justify-center h-full">
+                        <p className="text-red-500">Error: {error}</p>
+                     </div>
+                  )}
+
+                  {!loading && !error && tweets.length === 0 && (
+                     <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500">No tweets found</p>
+                     </div>
+                  )}
+
+                  {displayedTweets.map((tweet) => (
+                     <TweetCard key={tweet.tweetDetails.tweetId} tweet={tweet} />
+                  ))}
+
+                  {showLoadMore && !loading && (
+                     <button
+                        onClick={handleLoadMore}
+                        className="mt-2 px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors">
+                        Load More
+                     </button>
+                  )}
+
+                  {loading && tweets.length > 0 && (
+                     <div className="flex items-center justify-center py-4">
+                        <p className="text-gray-500 text-sm">Loading more...</p>
+                     </div>
+                  )}
+               </div>
+            </MobileSection>
          </div>
-         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-            {loading && tweets.length === 0 && (
-               <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-500">Loading tweets...</p>
+
+         {/* Desktop Version */}
+         <div className="hidden md:flex flex-col max-h-full min-h-0 bg-background-light dark:bg-background-dark overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white dark:bg-surface-dark border-b border-[#e5e7eb] dark:border-border-dark">
+               <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-[20px]">
+                     chat
+                  </span>
+                  <h3 className="text-sm font-bold tracking-wider uppercase text-[#111418] dark:text-gray-100">
+                     The Wire
+                  </h3>
                </div>
-            )}
-
-            {error && (
-               <div className="flex items-center justify-center h-full">
-                  <p className="text-red-500">Error: {error}</p>
+               <div className="flex gap-2">
+                  <button className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded">
+                     <span className="material-symbols-outlined text-gray-500 text-[18px]">
+                        tune
+                     </span>
+                  </button>
                </div>
-            )}
+            </div>
+            <div className="flex-1 p-4 flex flex-col gap-4">
+               {loading && tweets.length === 0 && (
+                  <div className="flex items-center justify-center h-full">
+                     <p className="text-gray-500">Loading tweets...</p>
+                  </div>
+               )}
 
-            {!loading && !error && tweets.length === 0 && (
-               <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-500">No tweets found</p>
-               </div>
-            )}
+               {error && (
+                  <div className="flex items-center justify-center h-full">
+                     <p className="text-red-500">Error: {error}</p>
+                  </div>
+               )}
 
-            {tweets.map((tweet) => (
-               <TweetCard key={tweet.tweetDetails.tweetId} tweet={tweet} />
-            ))}
+               {!loading && !error && tweets.length === 0 && (
+                  <div className="flex items-center justify-center h-full">
+                     <p className="text-gray-500">No tweets found</p>
+                  </div>
+               )}
 
-            {hasMore && !loading && (
-               <button
-                  onClick={loadMore}
-                  className="mt-2 px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors">
-                  Load More
-               </button>
-            )}
+               {tweets.map((tweet) => (
+                  <TweetCard key={tweet.tweetDetails.tweetId} tweet={tweet} />
+               ))}
 
-            {loading && tweets.length > 0 && (
-               <div className="flex items-center justify-center py-4">
-                  <p className="text-gray-500 text-sm">Loading more...</p>
-               </div>
-            )}
+               {hasMore && !loading && (
+                  <button
+                     onClick={loadMore}
+                     className="mt-2 px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors">
+                     Load More
+                  </button>
+               )}
+
+               {loading && tweets.length > 0 && (
+                  <div className="flex items-center justify-center py-4">
+                     <p className="text-gray-500 text-sm">Loading more...</p>
+                  </div>
+               )}
+            </div>
          </div>
       </div>
    );

@@ -1,29 +1,69 @@
 // components/PolymarketGate.tsx
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
-import { usePolymarketProfile } from '@/hooks/usePolyMarketProfile';
 import { PolymarketRequiredModal } from './PolymarketRequiredModal';
 
-export function PolymarketGate({ children }: { children: React.ReactNode }) {
-   const { isConnected } = useAccount();
-   const { exists, loading } = usePolymarketProfile();
+type GateStatus = 'checking' | 'allowed' | 'blocked';
 
-   // Wallet not connected → allow normal UI
-   if (!isConnected) {
-      return <>{children}</>;
-   }
+// Separate component that handles the gate logic without affecting children
+function GateLogic() {
+   const { address, isConnected } = useAccount();
+   const [gateStatus, setGateStatus] = useState<GateStatus>('checking');
+   const abortControllerRef = useRef<AbortController | null>(null);
 
-   // Still checking → block silently (no flash)
-   if (loading || exists === null) {
+   useEffect(() => {
+      // Cleanup previous request
+      if (abortControllerRef.current) {
+         abortControllerRef.current.abort();
+      }
+
+      if (!isConnected || !address) {
+         setGateStatus('allowed');
+         return;
+      }
+
+      setGateStatus('checking');
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      fetch(`/api/polymarket/profile?address=${address}`, {
+         signal: controller.signal,
+      })
+         .then((res) => res.json())
+         .then((data) => {
+            if (!controller.signal.aborted) {
+               setGateStatus(data.exists ? 'allowed' : 'blocked');
+            }
+         })
+         .catch((error) => {
+            if (error.name !== 'AbortError' && !controller.signal.aborted) {
+               setGateStatus('blocked');
+            }
+         });
+
+      return () => {
+         controller.abort();
+      };
+   }, [address, isConnected]);
+
+   if (gateStatus === 'checking') {
       return null;
    }
 
-   // Connected but no Polymarket profile → BLOCK
-   if (exists === false) {
+   if (gateStatus === 'blocked') {
       return <PolymarketRequiredModal />;
    }
 
-   // Connected + profile exists → allow app
-   return <>{children}</>;
+   return null;
+}
+
+export function PolymarketGate({ children }: { children: React.ReactNode }) {
+   return (
+      <div className="h-full flex flex-col">
+         <GateLogic />
+         {children}
+      </div>
+   );
 }

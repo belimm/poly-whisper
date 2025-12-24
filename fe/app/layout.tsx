@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/google-font-display */
 import type { Metadata } from 'next';
 import './globals.css';
-import { Providers } from '@/components/Providers';
 import { PolymarketGate } from '@/components/PolymarketGate';
+import { App } from './App';
 
 export const metadata: Metadata = {
    title: 'Whisper // Polymarket Intelligence',
@@ -24,10 +24,11 @@ export default function RootLayout({
             />
          </head>
          <body className="bg-background-light dark:bg-background-dark text-[#111418] dark:text-white font-display overflow-hidden flex flex-col h-screen">
-            <Providers>
+            <App>
                <PolymarketGate>{children}</PolymarketGate>
-            </Providers>
+            </App>
          </body>
       </html>
    );
 }
+

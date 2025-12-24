@@ -1,0 +1,47 @@
+{
+   "name": "poly-whisper-be",
+   "version": "2.0.3",
+   "type": "module",
+   "description": "Poly-Whisper Backend - TypeScript implementation with LLM-based market matching",
+   "main": "dist/index.js",
+   "scripts": {
+      "build": "tsc",
+      "start": "node dist/index.js",
+      "dev": "tsx watch src/index.ts",
+      "type-check": "tsc --noEmit",
+      "lint": "eslint src --ext .ts",
+      "test": "echo \"Error: no test specified\" && exit 1"
+   },
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/belimm/poly-sense.git"
+   },
+   "author": "Belimdev",
+   "license": "ISC",
+   "bugs": {
+      "url": "https://github.com/belimm/poly-sense/issues"
+   },
+   "homepage": "https://github.com/belimm/poly-sense#readme",
+   "dependencies": {
+      "@google/genai": "^1.27.0",
+      "@supabase/supabase-js": "^2.81.0",
+      "async": "^3.2.6",
+      "cors": "^2.8.5",
+      "dotenv": "^17.2.3",
+      "express": "^5.1.0",
+      "helmet": "^8.1.0",
+      "jsonwebtoken": "^9.0.2",
+      "openai": "^6.15.0",
+      "uuid": "^13.0.0",
+      "ws": "^8.18.3"
+   },
+   "devDependencies": {
+      "@types/express": "^5.0.4",
+      "@types/node": "^24.9.1",
+      "@types/ws": "^8.5.13",
+      "@types/cors": "^2.8.17",
+      "@types/uuid": "^10.0.0",
+      "tsx": "^4.19.2",
+      "typescript": "^5.9.3"
+   }
+}

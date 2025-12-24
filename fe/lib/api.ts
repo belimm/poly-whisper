@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { TweetsResponse, MarketsResponse } from './types';
+import { TweetsResponse, MarketsResponse, TweetStatistics } from './types';
 
 class PolyWhisperAPI {
    /**
@@ -20,13 +20,19 @@ class PolyWhisperAPI {
          throw new Error(`HTTP ${response.status}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('Fetched tweets:', data);
+      return data;
    }
 
    /**
     * Find Polymarket markets for a specific tweet
     */
-   async findMarketsForTweet(tweetId: string, q?: number, qc?: number): Promise<MarketsResponse> {
+   async findMarketsForTweet(
+      tweetId: string,
+      q?: number,
+      qc?: number
+   ): Promise<MarketsResponse> {
       const queryParams = new URLSearchParams();
 
       if (q !== undefined) {
@@ -38,7 +44,11 @@ class PolyWhisperAPI {
       }
 
       const queryString = queryParams.toString();
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/${tweetId}/findMarkets${queryString ? `?${queryString}` : ''}`;
+      const url = `${
+         process.env.NEXT_PUBLIC_API_URL
+      }/api/tweets/${tweetId}/findMarkets${
+         queryString ? `?${queryString}` : ''
+      }`;
 
       const response = await fetch(url);
 
@@ -54,6 +64,22 @@ class PolyWhisperAPI {
 
       return response.json();
    }
+
+   /**
+    * Get tweet statistics (total tweets, analyzed tweets, etc.)
+    */
+   async getTweetStatistics(): Promise<TweetStatistics> {
+      const response = await fetch(
+         `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/statistics`
+      );
+
+      if (!response.ok) {
+         throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
+   }
 }
 
 export const api = new PolyWhisperAPI();
+

@@ -32,7 +32,7 @@ class ClientWebSocketService extends EventEmitter {
                   return false;
                }
 
-               console.log(
+               devLog(
                   `✅ WebSocket connection approved from origin: ${
                      origin || 'unknown'
                   }`

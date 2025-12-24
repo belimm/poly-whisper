@@ -59,3 +59,10 @@ export interface TweetsResponse {
       email: string;
    };
 }
+
+export interface TweetStatistics {
+   total: number;
+   withAnalysis: number;
+   timestamp: string;
+}
+

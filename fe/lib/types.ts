@@ -60,3 +60,9 @@ export interface TweetsResponse {
    };
 }
 
+export interface TweetStatistics {
+   total: number;
+   withAnalysis: number;
+   timestamp: string;
+}
+

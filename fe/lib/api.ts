@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { TweetsResponse, MarketsResponse } from './types';
+import { TweetsResponse, MarketsResponse, TweetStatistics } from './types';
 
 class PolyWhisperAPI {
    /**
@@ -59,6 +59,21 @@ class PolyWhisperAPI {
          if (response.status === 401) {
             throw new Error('Authentication failed');
          }
+         throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
+   }
+
+   /**
+    * Get tweet statistics (total tweets, analyzed tweets, etc.)
+    */
+   async getTweetStatistics(): Promise<TweetStatistics> {
+      const response = await fetch(
+         `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/statistics`
+      );
+
+      if (!response.ok) {
          throw new Error(`HTTP ${response.status}`);
       }
 

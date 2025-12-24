@@ -9,6 +9,7 @@ import IntelAnalysis from './IntelAnalysis';
 import { useTweets } from '@/hooks/useTweets';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { EnrichedTweet } from '@/lib/types';
+import TickerBanner from './TickerBanner';
 
 export default function Dashboard() {
    const { tweets, loading, error, hasMore, loadMore, setTweets } = useTweets({
@@ -39,11 +40,15 @@ export default function Dashboard() {
       onNewTweet: handleNewTweet,
       enabled: true,
    });
-
    return (
-      <div className="flex flex-col h-full">
-         <Header isConnected={isConnected} />
-         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 min-h-0 divide-y md:divide-y-0 md:divide-x divide-[#e5e7eb] dark:divide-border-dark overflow-y-auto md:overflow-hidden">
+      <div className="flex flex-col h-screen overflow-hidden">
+         {/* Header - Fixed at top */}
+         <div className="flex-shrink-0">
+            <Header isConnected={isConnected} />
+         </div>
+
+         {/* Main Content Grid - Takes remaining space minus ticker height */}
+         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#e5e7eb] dark:divide-border-dark overflow-hidden">
             <TheWire
                tweets={tweets}
                loading={loading}
@@ -60,6 +65,11 @@ export default function Dashboard() {
                hasMore={hasMore}
                loadMore={loadMore}
             />
+         </div>
+
+         {/* Ticker Banner - Fixed at bottom, always visible */}
+         <div className="flex-shrink-0">
+            <TickerBanner />
          </div>
       </div>
    );

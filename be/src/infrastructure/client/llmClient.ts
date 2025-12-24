@@ -72,7 +72,7 @@ export class GoogleAIClient {
             const response = await this.genAI.models.generateContent({
                model: this.model,
                contents: prompt,
-               generationConfig: {
+               config: {
                   temperature: options.temperature || 0.1,
                   topK: options.topK || 40,
                   topP: options.topP || 0.95,
@@ -80,7 +80,7 @@ export class GoogleAIClient {
                },
             });
 
-            return response.text;
+            return response.text || '';
          } catch (error) {
             lastError = error as Error;
             console.warn(
@@ -337,7 +337,7 @@ RESPOND WITH VALID JSON ONLY:`;
 
          return {
             success: true,
-            matches: matchedMarkets,
+            matches: matchedMarkets as any,
             tweet_summary: result.tweet_summary,
             confidence: result.confidence,
             source: 'intelligent-gpt4-mini',

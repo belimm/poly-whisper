@@ -71,13 +71,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
    next();
 });
 
 // Health check route (public)
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
    res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -88,7 +88,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Root endpoint (public)
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
    res.json({
       message: 'Poly-Whisper Backend API',
       status: 'running',
@@ -141,9 +141,9 @@ app.use('/api/markets', marketRoutes);
 app.use(
    (
       err: Error & { status?: number },
-      req: Request,
+      _req: Request,
       res: Response,
-      next: NextFunction
+      _next: NextFunction
    ) => {
       console.error('Express error:', err);
       res.status(err.status || 500).json({

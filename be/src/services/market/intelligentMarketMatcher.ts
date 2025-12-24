@@ -35,8 +35,8 @@ export default class IntelligentMarketMatcher {
 
    constructor(options: IntelligentMarketMatcherOptions = {}) {
       this.catalogService =
-         options.catalogService || new MarketCatalogService();
-      this.openaiClient = options.openaiClient || null;
+         (options.catalogService || new MarketCatalogService()) as any;
+      this.openaiClient = (options.openaiClient || null) as any;
       this.log = options.log || console;
 
       // Configuration

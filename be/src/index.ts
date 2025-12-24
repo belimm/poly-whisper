@@ -139,7 +139,7 @@ twitterWS.on('tweet', async (tweet: TweetDetails) => {
          marketMatcher.matchTweet(
             {
                tweetDetails: tweet,
-               analysis: null, // Not needed for matching
+               analysis: {} as any, // Not needed for matching
                enrichedAt: new Date().toISOString(),
             },
             { maxMatches: 5, minRelevanceScore: 0.5 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { EnrichedTweet } from '@/lib/types'
+import { api } from '@/lib/api'
 
 interface Market {
   id: string
@@ -79,7 +80,7 @@ export function useWebSocket({ onNewTweet, onTrendingMarketUpdate, enabled = tru
   const connect = useCallback(() => {
     if (!enabled) return
 
-    const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000'
+    const wsBaseUrl = api.getWebSocketURL() || 'ws://localhost:3000'
     const wsUrl = `${wsBaseUrl}/ws`
 
     try {

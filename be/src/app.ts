@@ -16,9 +16,14 @@ const app: Express = express();
 
 // CORS configuration
 const allowedOrigins = getFrontendUrl();
+console.log('🔒 CORS - Allowed origins:', allowedOrigins);
+console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
+
 app.use(
    cors({
       origin: (origin, callback) => {
+         console.log('🌐 CORS request from origin:', origin);
+
          // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
          if (!origin) {
             return callback(null, true);
@@ -26,15 +31,18 @@ app.use(
 
          // Check if origin is in allowed list
          if (allowedOrigins.includes(origin)) {
+            console.log('✅ Origin allowed (in whitelist):', origin);
             return callback(null, true);
          }
 
-         // In development, also allow localhost with any port
-         if (isDev() && origin.startsWith('http://localhost:')) {
+         // Always allow localhost for local development against production backend
+         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+            console.log('✅ Origin allowed (localhost):', origin);
             return callback(null, true);
          }
 
          // Reject other origins
+         console.log('❌ Origin rejected:', origin);
          callback(
             new Error(
                `CORS: Origin ${origin} is not allowed. Allowed origins: ${allowedOrigins.join(

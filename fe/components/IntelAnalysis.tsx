@@ -143,7 +143,7 @@ export default function IntelAnalysis({
                   {displayedTweets.map((tweet) => {
                      const sentimentInfo = getSentimentInfo(tweet.analysis.sentiment);
                      const confidence = Math.round(
-                        tweet.analysis.sentimentScore * 100
+                        tweet.analysis.sentiment_score * 100
                      );
                      const marketLean = getMarketLean(tweet.analysis.sentiment, confidence);
                      const implication = generateMarketImplication(tweet);
@@ -247,7 +247,7 @@ export default function IntelAnalysis({
                {tweets.map((tweet) => {
                   const sentimentInfo = getSentimentInfo(tweet.analysis.sentiment);
                   const confidence = Math.round(
-                     tweet.analysis.sentimentScore * 100
+                     tweet.analysis.sentiment_score * 100
                   );
                   const marketLean = getMarketLean(tweet.analysis.sentiment, confidence);
                   const implication = generateMarketImplication(tweet);

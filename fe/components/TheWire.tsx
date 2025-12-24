@@ -10,9 +10,21 @@ interface TheWireProps {
    error: string | null;
    hasMore: boolean;
    loadMore: () => void;
+   hoveredTweetId: string | null;
+   setHoveredTweetId: (id: string | null) => void;
 }
 
-function TweetCard({ tweet }: { tweet: EnrichedTweet }) {
+function TweetCard({
+   tweet,
+   isHovered,
+   onMouseEnter,
+   onMouseLeave
+}: {
+   tweet: EnrichedTweet;
+   isHovered: boolean;
+   onMouseEnter: () => void;
+   onMouseLeave: () => void;
+}) {
    const getSentimentClass = (sentiment: string) => {
       switch (sentiment) {
          case 'positive':
@@ -74,8 +86,15 @@ function TweetCard({ tweet }: { tweet: EnrichedTweet }) {
 
    const tweetUrl = `https://x.com/${tweet.tweetDetails.authorUsername}/status/${tweet.tweetDetails.tweetId}`;
 
+   const borderClasses = isHovered
+      ? 'border-[#00bfff] border-solid shadow-[0_0_10px_rgba(0,191,255,0.5)]'
+      : 'border-[#e5e7eb] dark:border-border-dark border-dashed';
+
    return (
-      <div className="flex gap-3 pb-4 border-b border-dashed border-[#e5e7eb] dark:border-border-dark last:border-0">
+      <div
+         className={`flex gap-3 pb-4 border-b last:border-0 transition-all duration-200 rounded-lg p-2 -m-2 ${borderClasses}`}
+         onMouseEnter={onMouseEnter}
+         onMouseLeave={onMouseLeave}>
          <div
             className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0"
             style={{
@@ -140,6 +159,8 @@ export default function TheWire({
    error,
    hasMore,
    loadMore,
+   hoveredTweetId,
+   setHoveredTweetId,
 }: TheWireProps) {
    const [visibleCount, setVisibleCount] = useState(5)
    const [isMobile, setIsMobile] = useState(false)
@@ -207,7 +228,13 @@ export default function TheWire({
                   )}
 
                   {displayedTweets.map((tweet) => (
-                     <TweetCard key={tweet.tweetDetails.tweetId} tweet={tweet} />
+                     <TweetCard
+                        key={tweet.tweetDetails.tweetId}
+                        tweet={tweet}
+                        isHovered={hoveredTweetId === tweet.tweetDetails.tweetId}
+                        onMouseEnter={() => setHoveredTweetId(tweet.tweetDetails.tweetId)}
+                        onMouseLeave={() => setHoveredTweetId(null)}
+                     />
                   ))}
 
                   {showLoadMore && !loading && (
@@ -266,7 +293,13 @@ export default function TheWire({
                )}
 
                {tweets.map((tweet) => (
-                  <TweetCard key={tweet.tweetDetails.tweetId} tweet={tweet} />
+                  <TweetCard
+                     key={tweet.tweetDetails.tweetId}
+                     tweet={tweet}
+                     isHovered={hoveredTweetId === tweet.tweetDetails.tweetId}
+                     onMouseEnter={() => setHoveredTweetId(tweet.tweetDetails.tweetId)}
+                     onMouseLeave={() => setHoveredTweetId(null)}
+                  />
                ))}
 
                {hasMore && !loading && (

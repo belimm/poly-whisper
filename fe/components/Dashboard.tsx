@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import Header from './Header';
 import TheWire from './TheWire';
 import TrendingMarkets from './TrendingMarkets';
@@ -16,6 +16,9 @@ export default function Dashboard() {
       limit: 10,
       autoFetch: true,
    });
+
+   // Track hovered tweet ID across all components
+   const [hoveredTweetId, setHoveredTweetId] = useState<string | null>(null);
 
    // Handle new tweets from WebSocket
    const handleNewTweet = useCallback(
@@ -55,6 +58,8 @@ export default function Dashboard() {
                error={error}
                hasMore={hasMore}
                loadMore={loadMore}
+               hoveredTweetId={hoveredTweetId}
+               setHoveredTweetId={setHoveredTweetId}
             />
             <TrendingMarkets />
             <HotMarkets />
@@ -64,6 +69,8 @@ export default function Dashboard() {
                error={error}
                hasMore={hasMore}
                loadMore={loadMore}
+               hoveredTweetId={hoveredTweetId}
+               setHoveredTweetId={setHoveredTweetId}
             />
          </div>
 

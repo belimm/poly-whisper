@@ -1,7 +1,28 @@
-import { supabase } from './supabase';
-import { TweetsResponse, MarketsResponse, TweetStatistics } from './types';
+import type { TweetsResponse, TweetStatistics, Market } from './types';
 
 class PolyWhisperAPI {
+   private readonly baseURL: string;
+   private readonly websocketURL: string;
+
+   constructor() {
+      const isDevelopment = process.env?.NODE_ENV === 'development';
+
+      this.baseURL = isDevelopment
+         ? process.env.NEXT_PUBLIC_LOCAL_API_URL || ''
+         : process.env.NEXT_PUBLIC_API_URL || '';
+
+      this.websocketURL = isDevelopment
+         ? process.env.NEXT_PUBLIC_LOCAL_WS_URL || ''
+         : process.env.NEXT_PUBLIC_WS_URL || '';
+   }
+
+   /**
+    * Get the WebSocket URL for real-time connections
+    */
+   getWebSocketURL(): string {
+      return this.websocketURL;
+   }
+
    /**
     * Fetch tweets with AI analysis
     */
@@ -10,7 +31,7 @@ class PolyWhisperAPI {
       offset = 0
    ): Promise<TweetsResponse> {
       const response = await fetch(
-         `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/with-analysis?limit=${limit}&offset=${offset}`
+         `${this.baseURL}/api/tweets/with-analysis?limit=${limit}&offset=${offset}`
       );
 
       if (!response.ok) {
@@ -26,39 +47,12 @@ class PolyWhisperAPI {
    }
 
    /**
-    * Find Polymarket markets for a specific tweet
+    * Get tweet statistics (total tweets, analyzed tweets, etc.)
     */
-   async findMarketsForTweet(
-      tweetId: string,
-      q?: number,
-      qc?: number
-   ): Promise<MarketsResponse> {
-      const queryParams = new URLSearchParams();
-
-      if (q !== undefined) {
-         queryParams.append('q', q.toString());
-      }
-
-      if (qc !== undefined) {
-         queryParams.append('qc', qc.toString());
-      }
-
-      const queryString = queryParams.toString();
-      const url = `${
-         process.env.NEXT_PUBLIC_API_URL
-      }/api/tweets/${tweetId}/findMarkets${
-         queryString ? `?${queryString}` : ''
-      }`;
-
-      const response = await fetch(url);
+   async getTweetStatistics(): Promise<TweetStatistics> {
+      const response = await fetch(`${this.baseURL}/api/tweets/statistics`);
 
       if (!response.ok) {
-         if (response.status === 404) {
-            throw new Error('Tweet not found');
-         }
-         if (response.status === 401) {
-            throw new Error('Authentication failed');
-         }
          throw new Error(`HTTP ${response.status}`);
       }
 
@@ -66,14 +60,31 @@ class PolyWhisperAPI {
    }
 
    /**
-    * Get tweet statistics (total tweets, analyzed tweets, etc.)
+    * Get detailed market information by market IDs
     */
-   async getTweetStatistics(): Promise<TweetStatistics> {
-      const response = await fetch(
-         `${process.env.NEXT_PUBLIC_API_URL}/api/tweets/statistics`
-      );
+   async getMarketDetails(marketIds: string[]): Promise<{
+      markets: Market[];
+      found: number;
+      requested: number;
+      notFound: string[];
+      timestamp: string;
+      lastRefreshTime: string;
+   }> {
+      const response = await fetch(`${this.baseURL}/api/markets/details`, {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({ ids: marketIds }),
+      });
 
       if (!response.ok) {
+         if (response.status === 400) {
+            throw new Error('Invalid market IDs');
+         }
+         if (response.status === 503) {
+            throw new Error('Market catalog service unavailable');
+         }
          throw new Error(`HTTP ${response.status}`);
       }
 
@@ -82,4 +93,3 @@ class PolyWhisperAPI {
 }
 
 export const api = new PolyWhisperAPI();
-

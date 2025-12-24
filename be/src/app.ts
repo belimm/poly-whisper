@@ -8,7 +8,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { getFrontendUrl, isDev } from './utils/util.js';
 import tweetRoutes from './routes/tweetRoutes.js';
-import userRoutes from './routes/userRoutes.js';
 import type { AppLocals } from './types/index.js';
 
 // Create Express app
@@ -36,7 +35,10 @@ app.use(
          }
 
          // Always allow localhost for local development against production backend
-         if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+         if (
+            origin.startsWith('http://localhost:') ||
+            origin.startsWith('http://127.0.0.1:')
+         ) {
             console.log('✅ Origin allowed (localhost):', origin);
             return callback(null, true);
          }
@@ -135,7 +137,7 @@ app.get('/', (_req: Request, res: Response) => {
 
 // Register routes
 app.use('/api/tweets', tweetRoutes);
-app.use('/api/user', userRoutes);
+// app.use('/api/user', userRoutes);
 
 // Import and register market routes
 import marketRoutes from './routes/marketRoutes.js';

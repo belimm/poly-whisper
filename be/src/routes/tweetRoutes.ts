@@ -13,32 +13,32 @@ const getAppLocals = (req: Request): AppLocals => {
    return req.app.locals as AppLocals;
 };
 
-// GET /api/tweets - Get tweets with pagination (from database)
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-   try {
-      const { limit = '50', offset = '0' } = req.query;
-      const locals = getAppLocals(req);
-      const { tweetDB } = locals;
+// // GET /api/tweets - Get tweets with pagination (from database)
+// router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+//    try {
+//       const { limit = '50', offset = '0' } = req.query;
+//       const locals = getAppLocals(req);
+//       const { tweetDB } = locals;
 
-      const limitNum = parseInt(limit as string, 10);
-      const offsetNum = parseInt(offset as string, 10);
+//       const limitNum = parseInt(limit as string, 10);
+//       const offsetNum = parseInt(offset as string, 10);
 
-      const { tweets, total } = await tweetDB.getLatestTweets(
-         limitNum,
-         offsetNum
-      );
+//       const { tweets, total } = await tweetDB.getLatestTweets(
+//          limitNum,
+//          offsetNum
+//       );
 
-      res.json({
-         tweets,
-         limit: limitNum,
-         offset: offsetNum,
-         total,
-         hasMore: offsetNum + limitNum < total,
-      });
-   } catch (error) {
-      next(error);
-   }
-});
+//       res.json({
+//          tweets,
+//          limit: limitNum,
+//          offset: offsetNum,
+//          total,
+//          hasMore: offsetNum + limitNum < total,
+//       });
+//    } catch (error) {
+//       next(error);
+//    }
+// });
 
 // GET /api/tweets/with-analysis - Get tweets with analysis (from database)
 router.get(
@@ -112,33 +112,33 @@ router.get(
    }
 );
 
-// GET /api/tweets/search - Search tweets (from database)
-router.get(
-   '/search',
-   async (req: Request, res: Response, next: NextFunction) => {
-      try {
-         const { q } = req.query;
-         if (!q || typeof q !== 'string') {
-            return res
-               .status(400)
-               .json({ error: 'Query parameter "q" is required' });
-         }
+// // GET /api/tweets/search - Search tweets (from database)
+// router.get(
+//    '/search',
+//    async (req: Request, res: Response, next: NextFunction) => {
+//       try {
+//          const { q } = req.query;
+//          if (!q || typeof q !== 'string') {
+//             return res
+//                .status(400)
+//                .json({ error: 'Query parameter "q" is required' });
+//          }
 
-         const locals = getAppLocals(req);
-         const { tweetDB } = locals;
+//          const locals = getAppLocals(req);
+//          const { tweetDB } = locals;
 
-         const matchingTweets = await tweetDB.searchTweets(q, 50);
+//          const matchingTweets = await tweetDB.searchTweets(q, 50);
 
-         res.json({
-            tweets: matchingTweets,
-            query: q,
-            count: matchingTweets.length,
-         });
-      } catch (error) {
-         next(error);
-      }
-   }
-);
+//          res.json({
+//             tweets: matchingTweets,
+//             query: q,
+//             count: matchingTweets.length,
+//          });
+//       } catch (error) {
+//          next(error);
+//       }
+//    }
+// );
 
 // GET /api/tweets/statistics - Get tweet statistics (from database)
 router.get(

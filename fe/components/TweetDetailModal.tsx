@@ -170,9 +170,9 @@ export default function TweetDetailModal({ tweet, onClose }: TweetDetailModalPro
                                  </div>
                                  <div className="flex gap-2">
                                     <span className="text-gray-600 select-none">&gt;</span>
-                                    <p>Detected: 
+                                    <p>Detected:
                                        {tweet.analysis.keywords.slice(0, 2).map((keyword, idx) => (
-                                          <span key={idx}> <span className="text-primary">"{keyword}"</span>{idx < 1 && tweet.analysis.keywords.length > 1 ? ',' : ''}</span>
+                                          <span key={idx}> <span className="text-primary">&quot;{keyword}&quot;</span>{idx < 1 && tweet.analysis.keywords.length > 1 ? ',' : ''}</span>
                                        ))}
                                     </p>
                                  </div>

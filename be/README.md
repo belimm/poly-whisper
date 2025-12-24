@@ -1,789 +1,247 @@
-# PolySense Backend API
-
-Real-time Twitter monitoring with AI analysis and Polymarket correlation engine.
-
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-5.1.0-blue.svg)](https://expressjs.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20DB-green.svg)](https://supabase.com/)
-[![WebSocket](https://img.shields.io/badge/WebSocket-Real--time-orange.svg)](https://github.com/websockets/ws)
-
----
-
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [For Frontend Developers](#for-frontend-developers)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
-- [API Reference](#api-reference)
-- [WebSocket Integration](#websocket-integration)
-- [Data Format](#data-format)
-- [Authentication](#authentication)
-- [Environment Setup](#environment-setup)
-
----
+# Poly-Whisper Backend (Updated Implementation)
 
 ## Overview
 
-PolySense monitors Twitter in real-time, analyzes tweets with AI (Google Gemini), and correlates them with Polymarket prediction markets.
+This is the updated backend implementation that uses **LLM-based intelligent market matching** instead of keyword-based search. The system now:
 
-**What you get:**
-- Real-time tweet stream via WebSocket
-- AI-powered sentiment analysis
-- Keyword extraction and categorization
-- Polymarket prediction market matching
-- Historical tweet archives via REST API
-- User authentication with Supabase
+1. **Fetches all active markets** from Polymarket API using the new endpoint
+2. **Caches markets in Supabase** with automatic refresh every 5 minutes
+3. **Uses GPT-4 mini** to intelligently match tweets to relevant markets
+4. **Provides comprehensive timing analysis** for performance monitoring
 
----
+## Key Changes from Original Implementation
 
-## For Frontend Developers
+### 1. New API Endpoint
 
-### Quick Start Integration
+-  **Old**: Generic search endpoint with keyword-based queries
+-  **New**: `/markets?closed=false&include_tag=true&volume_num_min=10000`
+   -  Fetches all active markets in one go
+   -  Includes tags for better categorization
+   -  Filters by minimum volume ($10k default)
 
-**1. Install Supabase Client**
+### 2. Market Catalog Service
+
+-  **Refresh Interval**: 5 minutes (configurable via `MARKET_CATALOG_REFRESH_INTERVAL`)
+-  **Zero-downtime updates**: Writes new data before deleting old
+-  **Comprehensive timing metrics**: Tracks fetch time, write time, cleanup time
+-  **Automatic retry logic**: Handles API failures gracefully
+
+### 3. Intelligent Market Matching
+
+-  **LLM-based**: Uses GPT-4 mini for semantic understanding
+-  **No per-tweet API calls**: All markets are cached locally
+-  **Relevance scoring**: Each match has a confidence score (0-1)
+-  **Fallback support**: Falls back to keyword matching if LLM unavailable
+
+## Setup
+
+### 1. Environment Variables
+
+Add these to your `.env` file:
+
 ```bash
-npm install @supabase/supabase-js
+# Supabase (required)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_ANON_KEY=your_anon_key
+
+# OpenAI (required for intelligent matching)
+OPENAI_API_KEY=sk-...
+
+# Market Catalog Configuration (optional)
+MARKET_CATALOG_REFRESH_INTERVAL=300000  # 5 minutes in milliseconds
+MARKET_CATALOG_MIN_VOLUME=10000          # Minimum volume in USD
+MARKET_CATALOG_MIN_LIQUIDITY=500         # Minimum liquidity in USD
+
+# Matching Configuration (optional)
+MAX_MARKETS_PER_TWEET=5                  # Max markets to return per tweet
+MIN_RELEVANCE_SCORE=0.5                  # Minimum relevance score (0-1)
 ```
 
-**2. Initialize Supabase**
-```typescript
-// lib/supabase.ts
-import { createClient } from '@supabase/supabase-js';
+### 2. Database Migration
 
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-```
+Run the migration to create the `market_catalog` table:
 
-**3. Get JWT Token**
-```typescript
-// Login user
-const { data: { session }, error } = await supabase.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password'
-});
-
-const token = session.access_token; // Use this for API calls
-```
-
-**4. Fetch Tweets from API**
-```typescript
-const response = await fetch('http://localhost:3000/api/v2/tweets/with-analysis?limit=10&offset=0', {
-  headers: {
-    'Authorization': `Bearer ${token}`
-  }
-});
-
-const { tweets } = await response.json();
-```
-
-**5. Connect to WebSocket**
-```typescript
-const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
-
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-
-  if (message.type === 'newTweet') {
-    const tweet = message.data;
-    // Handle new tweet
-    console.log('New tweet:', tweet);
-  }
-};
-```
-
----
-
-## Architecture
-
-### System Overview
-
-```
-┌──────────────────┐
-│  Twitter API     │ (via twitterapi.io WebSocket)
-└────────┬─────────┘
-         │ Real-time tweets
-         ▼
-┌──────────────────────────────────────────────────┐
-│           PolySense Backend                       │
-│                                                   │
-│  ┌──────────────┐    ┌──────────────┐           │
-│  │ Tweet        │───▶│ AI Analysis  │           │
-│  │ Pipeline     │    │ (Gemini)     │           │
-│  └──────────────┘    └──────────────┘           │
-│         │                    │                    │
-│         ▼                    ▼                    │
-│  ┌──────────────┐    ┌──────────────┐           │
-│  │ Polymarket   │    │ Supabase DB  │           │
-│  │ Search       │    │ (Postgres)   │           │
-│  └──────────────┘    └──────────────┘           │
-│         │                    │                    │
-│         └────────┬───────────┘                   │
-│                  ▼                                │
-│         ┌──────────────────┐                     │
-│         │  Enriched Tweet  │                     │
-│         └──────────────────┘                     │
-└──────────────────┬──────────────────────────────┘
-                   │
-         ┌─────────┴─────────┐
-         │                   │
-         ▼                   ▼
-┌─────────────┐    ┌──────────────┐
-│ WebSocket   │    │ REST API     │
-│ (Real-time) │    │ (Archives)   │
-└──────┬──────┘    └──────┬───────┘
-       │                  │
-       └────────┬─────────┘
-                ▼
-     ┌────────────────────┐
-     │  Frontend Clients  │
-     │  (Next.js/React)   │
-     └────────────────────┘
-```
-
-### Data Flow
-
-1. **Twitter Stream** → Backend receives tweets via WebSocket
-2. **AI Analysis** → Google Gemini analyzes sentiment, extracts keywords
-3. **Market Search** → Polymarket API searches for relevant prediction markets
-4. **Enrichment** → Combines tweet + analysis + markets into single object
-5. **Storage** → Saves to Supabase database
-6. **Distribution** → Broadcasts to frontend via WebSocket + serves via REST API
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- Supabase account (free tier works)
-- Twitter API access via twitterapi.io
-- Google Gemini API key
-
-### Backend Setup
-
-**1. Install Dependencies**
 ```bash
-cd poly-whisper-be
+# In Supabase SQL Editor, run:
+be/migrations/003_create_market_catalog.sql
+```
+
+Or use the existing migration file - it's already compatible.
+
+### 3. Install Dependencies
+
+```bash
+cd be-new
 npm install
 ```
 
-**2. Configure Environment**
+### 4. Start the Server
+
 ```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```env
-# Server
-PORT=3000
-NODE_ENV=development
-
-# Supabase (Get from https://app.supabase.com)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-
-# Twitter API
-WEBSOCKET_URL=wss://ws.twitterapi.io/twitter/tweet/websocket
-TWITTERAPI_IO_KEY=your_twitter_api_key
-
-# Google Gemini
-GOOGLE_AI_API_KEY=your_gemini_api_key
-
-# Frontend URLs (for CORS)
-FRONTEND_DEV_URL=http://localhost:3001,http://localhost:3000
-```
-
-**3. Setup Database**
-- Go to Supabase SQL Editor
-- Copy content from `supabase-schema.sql`
-- Execute to create tables and policies
-
-**4. Start Server**
-```bash
+npm start
+# or for development with auto-reload:
 npm run dev
 ```
 
-Server runs on `http://localhost:3000`
+## Architecture
 
----
-
-## API Reference
-
-All API endpoints require Supabase JWT authentication.
-
-### Base URL
 ```
-http://localhost:3000/api/v2
-```
-
-### Authentication Header
-```
-Authorization: Bearer YOUR_SUPABASE_JWT_TOKEN
-```
-
----
-
-### Endpoints
-
-#### 1. Get Tweets with Analysis
-
-**Request:**
-```http
-GET /api/v2/tweets/with-analysis?limit=20&offset=0
+┌─────────────────┐
+│  Twitter WS     │ → Tweets
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Tweet Pipeline │ → Analyzes tweets with LLM
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Intelligent     │ → Matches tweets to markets
+│ Market Matcher  │   using GPT-4 mini + Catalog
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Market Catalog  │ → Cached markets from Supabase
+│ Service         │   (refreshed every 5 min)
+└─────────────────┘
 ```
 
-**Query Parameters:**
-- `limit` (optional, default: 10) - Number of tweets per page
-- `offset` (optional, default: 0) - Pagination offset
+## API Endpoints
 
-**Response:**
-```json
-{
-  "tweets": [
-    {
-      "tweetDetails": {
-        "tweetId": "1234567890",
-        "authorUsername": "elonmusk",
-        "authorName": "Elon Musk",
-        "text": "Bitcoin to the moon!",
-        "createdAt": "2025-11-10T12:00:00Z",
-        "likeCount": 15000,
-        "retweetCount": 3000,
-        "url": "https://x.com/elonmusk/status/1234567890"
-      },
-      "analysis": {
-        "sentiment": "positive",
-        "sentimentScore": 0.85,
-        "keywords": ["bitcoin", "moon"],
-        "categories": ["cryptocurrency"]
-      },
-      "enrichedAt": "2025-11-10T12:00:05Z"
-    }
-  ],
-  "total": 150,
-  "limit": 20,
-  "offset": 0,
-  "hasMore": true
-}
-```
-
----
-
-#### 2. Search Tweets
-
-**Request:**
-```http
-GET /api/v2/tweets/search?q=bitcoin&limit=50
-```
-
-**Query Parameters:**
-- `q` (required) - Search keyword
-- `limit` (optional, default: 50) - Max results
-
-**Response:**
-```json
-{
-  "tweets": [...],
-  "keyword": "bitcoin",
-  "count": 25
-}
-```
-
----
-
-#### 3. Get Statistics
-
-**Request:**
-```http
-GET /api/v2/tweets/statistics
-```
-
-**Response:**
-```json
-{
-  "statistics": {
-    "totalTweets": 1250,
-    "totalAnalyses": 1240
-  },
-  "timestamp": "2025-11-10T12:00:00Z"
-}
-```
-
----
-
-#### 4. Get User Profile
-
-**Request:**
-```http
-GET /api/v2/user/profile
-```
-
-**Response:**
-```json
-{
-  "profile": {
-    "id": "user-uuid",
-    "username": "johndoe",
-    "display_name": "John Doe",
-    "created_at": "2025-11-01T10:00:00Z"
-  }
-}
-```
-
----
-
-#### 5. Create Bookmark
-
-**Request:**
-```http
-POST /api/v2/user/interactions
-Content-Type: application/json
-
-{
-  "tweet_id": "uuid-here",
-  "interaction_type": "bookmark",
-  "note": "Interesting analysis"
-}
-```
-
-**Response:**
-```json
-{
-  "interaction": {
-    "id": "interaction-uuid",
-    "user_id": "user-uuid",
-    "tweet_id": "tweet-uuid",
-    "interaction_type": "bookmark",
-    "created_at": "2025-11-10T12:00:00Z"
-  },
-  "created": true
-}
-```
-
----
-
-## WebSocket Integration
-
-### Connection
-
-**URL:**
-```
-ws://localhost:3000/ws?token=YOUR_SUPABASE_JWT_TOKEN
-```
-
-### Frontend Example
-
-```typescript
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-
-function useTweetStream() {
-  const [tweets, setTweets] = useState([]);
-  const [ws, setWs] = useState<WebSocket | null>(null);
-
-  useEffect(() => {
-    async function connectWebSocket() {
-      // Get Supabase session
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        console.error('No session found');
-        return;
-      }
-
-      // Connect to WebSocket
-      const websocket = new WebSocket(
-        `ws://localhost:3000/ws?token=${session.access_token}`
-      );
-
-      websocket.onopen = () => {
-        console.log('✅ Connected to tweet stream');
-      };
-
-      websocket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-
-        switch (message.type) {
-          case 'welcome':
-            console.log('Welcome:', message.message);
-            break;
-
-          case 'newTweet':
-            const tweet = message.data;
-            setTweets(prev => [tweet, ...prev].slice(0, 100));
-            break;
-
-          case 'system':
-            console.log('System:', message.message);
-            break;
-        }
-      };
-
-      websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-
-      websocket.onclose = () => {
-        console.log('❌ Disconnected from tweet stream');
-      };
-
-      setWs(websocket);
-
-      return () => {
-        websocket.close();
-      };
-    }
-
-    connectWebSocket();
-  }, []);
-
-  return { tweets, ws };
-}
-```
-
-### Message Types
-
-#### From Server
-
-**Welcome Message:**
-```json
-{
-  "type": "welcome",
-  "message": "Connected to PolySense WebSocket",
-  "authType": "supabase",
-  "userId": "user-uuid",
-  "timestamp": "2025-11-10T12:00:00Z"
-}
-```
-
-**New Tweet:**
-```json
-{
-  "type": "newTweet",
-  "data": {
-    "tweetDetails": { ... },
-    "analysis": { ... },
-    "polymarketMatches": [ ... ],
-    "enrichedAt": "..."
-  },
-  "timestamp": "2025-11-10T12:00:00Z"
-}
-```
-
-**System Message:**
-```json
-{
-  "type": "system",
-  "level": "info",
-  "message": "Twitter WebSocket connected",
-  "timestamp": "2025-11-10T12:00:00Z"
-}
-```
-
-#### To Server
-
-**Ping (Heartbeat):**
-```json
-{
-  "type": "ping"
-}
-```
-
-**Subscribe to Filters:**
-```json
-{
-  "type": "subscribe",
-  "data": {
-    "keywords": ["bitcoin", "ethereum"],
-    "sentiment": "positive"
-  }
-}
-```
-
----
-
-## Data Format
-
-### Enriched Tweet Structure
-
-Every tweet (from WebSocket and REST API) has this format:
-
-```typescript
-interface EnrichedTweet {
-  tweetDetails: {
-    tweetId: string;
-    authorId: string;
-    authorUsername: string;
-    authorName: string;
-    userAvatar: string;
-    text: string;
-    createdAt: string; // ISO timestamp
-    likeCount: number;
-    retweetCount: number;
-    replyCount: number;
-    url: string;
-    receivedAtMs: number;
-  };
-  analysis: {
-    sentiment: 'positive' | 'negative' | 'neutral';
-    sentimentScore: number; // -1.0 to 1.0
-    keywords: string[];
-    categories: string[];
-    summary: string;
-  };
-  enrichedAt: string; // ISO timestamp
-}
-```
-
----
-
-## Authentication
-
-### Supabase Auth Flow
-
-**1. Sign Up**
-```typescript
-const { data, error } = await supabase.auth.signUp({
-  email: 'user@example.com',
-  password: 'securepassword'
-});
-```
-
-**2. Sign In**
-```typescript
-const { data: { session }, error } = await supabase.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'securepassword'
-});
-
-const token = session.access_token; // JWT token
-```
-
-**3. Use Token in API Calls**
-```typescript
-fetch('http://localhost:3000/api/v2/tweets/latest', {
-  headers: {
-    'Authorization': `Bearer ${token}`
-  }
-});
-```
-
-**4. Use Token in WebSocket**
-```typescript
-const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
-```
-
-### Token Management
-
-- Tokens expire after 1 hour
-- Refresh automatically with Supabase client
-- Check session before API calls:
-
-```typescript
-const { data: { session } } = await supabase.auth.getSession();
-
-if (!session) {
-  // Redirect to login
-}
-```
-
----
-
-## Environment Setup
-
-### Frontend Environment Variables
-
-Create `.env.local` in your frontend project:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-
-# Backend API
-NEXT_PUBLIC_API_URL=http://localhost:3000
-NEXT_PUBLIC_WS_URL=ws://localhost:3000
-```
-
-### Backend Environment Variables
-
-See `.env.example` for complete configuration.
-
-**Required:**
-- `SUPABASE_URL` - Your Supabase project URL
-- `SUPABASE_ANON_KEY` - Public anon key
-- `SUPABASE_SERVICE_ROLE_KEY` - Secret service role key
-- `GOOGLE_AI_API_KEY` - Google Gemini API key
-- `TWITTERAPI_IO_KEY` - Twitter API key
-
----
-
-## Complete Frontend Integration Example
-
-```typescript
-// app/dashboard/page.tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-
-export default function Dashboard() {
-  const [tweets, setTweets] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch initial tweets
-  useEffect(() => {
-    async function fetchTweets() {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        window.location.href = '/login';
-        return;
-      }
-
-      const response = await fetch(
-        'http://localhost:3000/api/v2/tweets/latest?count=20',
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        }
-      );
-
-      const data = await response.json();
-      setTweets(data.tweets);
-      setLoading(false);
-    }
-
-    fetchTweets();
-  }, []);
-
-  // Connect to WebSocket for real-time updates
-  useEffect(() => {
-    async function connectWebSocket() {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) return;
-
-      const ws = new WebSocket(
-        `ws://localhost:3000/ws?token=${session.access_token}`
-      );
-
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-
-        if (message.type === 'newTweet') {
-          setTweets(prev => [message.data, ...prev].slice(0, 50));
-        }
-      };
-
-      return () => ws.close();
-    }
-
-    connectWebSocket();
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <div>
-      <h1>Live Tweets</h1>
-      {tweets.map(tweet => (
-        <div key={tweet.tweetDetails.tweetId}>
-          <h3>{tweet.tweetDetails.authorName}</h3>
-          <p>{tweet.tweetDetails.text}</p>
-          <span>Sentiment: {tweet.analysis.sentiment}</span>
-          <div>
-            {tweet.analysis.keywords.map(kw => (
-              <span key={kw}>{kw}</span>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-## Testing
-
-### Get Test JWT Token
+### Market Catalog Stats
 
 ```bash
-# Sign up a test user
-curl -X POST "https://your-project.supabase.co/auth/v1/signup" \
-  -H "apikey: YOUR_ANON_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"testpass123"}'
-
-# Login to get token
-curl -X POST "https://your-project.supabase.co/auth/v1/token?grant_type=password" \
-  -H "apikey: YOUR_ANON_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"testpass123"}'
-
-# Response contains access_token - use it in API calls
+GET /api/markets/stats
 ```
 
-### Test API Endpoint
+Returns catalog statistics including timing metrics.
+
+### Market Catalog Refresh (Manual)
 
 ```bash
-TOKEN="your_jwt_token_here"
-
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3000/api/v2/tweets/latest?count=5
+POST /api/markets/refresh
 ```
 
----
+Manually trigger a catalog refresh.
+
+## Performance Metrics
+
+The service tracks:
+
+-  **Fetch Duration**: Time to fetch all markets from Polymarket API
+-  **Write Duration**: Time to write markets to Supabase
+-  **Cleanup Duration**: Time to delete old markets
+-  **Total Refresh Duration**: End-to-end refresh time
+-  **Average API Call Time**: Average time per API request
+-  **Market Counts**: Total markets fetched, written, deleted
+
+### Timing Analysis
+
+The service logs timing information:
+
+-  ✅ Good: Refresh completes in < 30 seconds
+-  ⚠️ Warning: Refresh takes > 30 seconds (consider optimization)
+
+## Configuration
+
+### Refresh Interval
+
+Default: 5 minutes (300,000ms)
+
+To change:
+
+```bash
+MARKET_CATALOG_REFRESH_INTERVAL=600000  # 10 minutes
+```
+
+### Minimum Volume Filter
+
+Default: $10,000
+
+To change:
+
+```bash
+MARKET_CATALOG_MIN_VOLUME=5000  # $5k minimum
+```
+
+### Matching Configuration
+
+```bash
+MAX_MARKETS_PER_TWEET=10        # Return top 10 matches
+MIN_RELEVANCE_SCORE=0.6         # Only matches with 60%+ relevance
+```
+
+## Monitoring
+
+Check catalog status:
+
+```javascript
+const stats = marketCatalogService.getStats();
+console.log(stats);
+// {
+//   totalMarkets: 1234,
+//   lastRefreshDuration: 15234,
+//   lastFetchDuration: 8234,
+//   lastWriteDuration: 3456,
+//   refreshCount: 42,
+//   avgApiCallTime: 234,
+//   ...
+// }
+```
 
 ## Troubleshooting
 
-### "Invalid API key" Error
+### Catalog Not Refreshing
 
-**Fix:** Update `SUPABASE_SERVICE_ROLE_KEY` in `.env` with correct key from Supabase dashboard.
+1. Check Supabase connection: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+2. Check API endpoint: Verify Polymarket API is accessible
+3. Check logs for error messages
 
-### "Unauthorized" Error
+### LLM Matching Not Working
 
-**Check:**
-1. JWT token is valid (not expired)
-2. Token is correctly passed in `Authorization: Bearer <token>` header
-3. User exists in Supabase auth
+1. Check OpenAI API key: `OPENAI_API_KEY`
+2. Verify catalog is ready: `marketCatalogService.isReady()`
+3. Check logs for LLM errors
 
-### WebSocket Connection Fails
+### Slow Refresh Times
 
-**Check:**
-1. Token is passed in URL: `ws://localhost:3000/ws?token=YOUR_TOKEN`
-2. Token is valid
-3. Backend is running
+1. Check network latency to Polymarket API
+2. Consider increasing `MARKET_CATALOG_REFRESH_INTERVAL`
+3. Check Supabase connection pool settings
 
-### No Tweets Appearing
+## Migration from Old Implementation
 
-**Check:**
-1. Twitter WebSocket is connected (check backend logs)
-2. Tweets are being received (check backend logs for "ENRICHED TWEET")
-3. Database is configured correctly
+1. **Stop old server**
+2. **Update environment variables** (add OpenAI key)
+3. **Run database migration** (if not already done)
+4. **Start new server**: `cd be-new && npm start`
+5. **Monitor first refresh** (should complete in < 30s)
 
----
+## Files Structure
 
-## Support
+```
+be-new/
+├── index.js                              # Main entry point (updated)
+├── src/
+│   ├── services/
+│   │   └── market/
+│   │       ├── marketCatalogService.js   # NEW: Updated catalog service
+│   │       └── intelligentMarketMatcher.js # LLM-based matching
+│   └── infrastructure/
+│       ├── database/
+│       │   └── supabaseClient.js          # Supabase client
+│       └── client/
+│           └── llmClient.js               # OpenAI client
+└── migrations/
+    └── 003_create_market_catalog.sql      # Database schema
+```
 
-- **Documentation:** See `SETUP_GUIDE.md` for detailed setup
-- **Database Schema:** See `supabase-schema.sql`
-- **Issues:** Create an issue on GitHub
+## Next Steps
 
----
-
-## License
-
-ISC License - See LICENSE file for details
-
----
-
-**Built with:** Node.js • Express • Supabase • WebSocket • Google Gemini AI • Polymarket API
+1. **Test the implementation**: Run the server and monitor first refresh
+2. **Verify timing**: Check that refresh completes in reasonable time
+3. **Monitor matching quality**: Review relevance scores and matches
+4. **Adjust configuration**: Tune refresh interval and filters as needed

@@ -11,6 +11,8 @@ interface IntelAnalysisProps {
    error: string | null;
    hasMore: boolean;
    loadMore: () => void;
+   hoveredTweetId: string | null;
+   setHoveredTweetId: (id: string | null) => void;
 }
 
 export default function IntelAnalysis({
@@ -19,6 +21,8 @@ export default function IntelAnalysis({
    error,
    hasMore,
    loadMore,
+   hoveredTweetId,
+   setHoveredTweetId,
 }: IntelAnalysisProps) {
    const [visibleCount, setVisibleCount] = useState(5)
    const [isMobile, setIsMobile] = useState(false)
@@ -147,12 +151,18 @@ export default function IntelAnalysis({
                      );
                      const marketLean = getMarketLean(tweet.analysis.sentiment, confidence);
                      const implication = generateMarketImplication(tweet);
+                     const isHovered = hoveredTweetId === tweet.tweetDetails.tweetId;
+                     const borderClasses = isHovered
+                        ? 'border-[#00bfff] shadow-[0_0_10px_rgba(0,191,255,0.5)]'
+                        : 'border-[#e5e7eb] dark:border-[#2a3745] hover:border-primary/50';
 
                      return (
                         <div
                            key={tweet.tweetDetails.tweetId}
                            onClick={() => handleCardClick(tweet)}
-                           className="rounded-lg border border-[#e5e7eb] dark:border-[#2a3745] bg-[#0f1419] p-4 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer">
+                           onMouseEnter={() => setHoveredTweetId(tweet.tweetDetails.tweetId)}
+                           onMouseLeave={() => setHoveredTweetId(null)}
+                           className={`rounded-lg border bg-[#0f1419] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer ${borderClasses}`}>
                            {/* Header */}
                            <div className="flex items-center justify-between mb-3">
                               <span className="text-xs text-gray-400">
@@ -251,12 +261,18 @@ export default function IntelAnalysis({
                   );
                   const marketLean = getMarketLean(tweet.analysis.sentiment, confidence);
                   const implication = generateMarketImplication(tweet);
+                  const isHovered = hoveredTweetId === tweet.tweetDetails.tweetId;
+                  const borderClasses = isHovered
+                     ? 'border-[#00bfff] shadow-[0_0_10px_rgba(0,191,255,0.5)]'
+                     : 'border-[#e5e7eb] dark:border-[#2a3745] hover:border-primary/50';
 
                   return (
                      <div
                         key={tweet.tweetDetails.tweetId}
                         onClick={() => handleCardClick(tweet)}
-                        className="rounded-lg border border-[#e5e7eb] dark:border-[#2a3745] bg-[#0f1419] p-4 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer">
+                        onMouseEnter={() => setHoveredTweetId(tweet.tweetDetails.tweetId)}
+                        onMouseLeave={() => setHoveredTweetId(null)}
+                        className={`rounded-lg border bg-[#0f1419] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer ${borderClasses}`}>
                         {/* Header */}
                         <div className="flex items-center justify-between mb-3">
                            <span className="text-xs text-gray-400">

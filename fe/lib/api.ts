@@ -5,15 +5,23 @@ class PolyWhisperAPI {
    private readonly websocketURL: string;
 
    constructor() {
-      const isDevelopment = process.env?.NODE_ENV === 'development';
+      console.log('Environment:', process.env);
 
-      this.baseURL = isDevelopment
+      // Use production URLs by default, unless explicitly running in local development
+      const isLocalDevelopment = process.env.NEXT_PUBLIC_USE_LOCAL === 'true' ||
+                                  (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_API_URL);
+
+      this.baseURL = isLocalDevelopment
          ? process.env.NEXT_PUBLIC_LOCAL_API_URL || ''
          : process.env.NEXT_PUBLIC_API_URL || '';
 
-      this.websocketURL = isDevelopment
+      console.log('Using baseURL:', this.baseURL);
+
+      this.websocketURL = isLocalDevelopment
          ? process.env.NEXT_PUBLIC_LOCAL_WS_URL || ''
          : process.env.NEXT_PUBLIC_WS_URL || '';
+
+      console.log('Using websocketURL:', this.websocketURL);
    }
 
    /**

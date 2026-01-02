@@ -33,7 +33,7 @@ export default function TickerBanner() {
                icon: '💡',
             },
             {
-               text: `${((statistics.withAnalysis / statistics.total) * 100).toFixed(1)}% analysis coverage`,
+               text: `${((statistics.withAnalysis / statistics.total) * 100).toFixed(0)}% analysis coverage`,
                icon: '📈',
             },
             { text: 'Real-time market intelligence', icon: '⚡' },
@@ -45,35 +45,26 @@ export default function TickerBanner() {
       }
    }, [statistics, loading]);
 
+   const renderItems = () =>
+      items.map((item, index) => (
+         <div
+            key={index}
+            className="flex items-center gap-2 text-gray-300 dark:text-gray-400 font-medium text-sm px-4 shrink-0"
+         >
+            <span className="text-lg opacity-70">{item.icon}</span>
+            <span>{item.text}</span>
+            <span className="text-gray-500 dark:text-gray-600 ml-4">•</span>
+         </div>
+      ));
+
    return (
       <div className="w-full bg-[#1a1d29] dark:bg-[#0f1117] overflow-hidden border-t-2 border-gray-400/30 dark:border-gray-600/40">
-         <div className="relative h-12 flex items-center">
-            {/* First scroll instance */}
-            <div className="animate-scroll flex items-center gap-8 px-4 whitespace-nowrap">
-               {items.map((item, index) => (
-                  <div
-                     key={`first-${index}`}
-                     className="flex items-center gap-2 text-gray-300 dark:text-gray-400 font-medium text-sm"
-                  >
-                     <span className="text-lg opacity-70">{item.icon}</span>
-                     <span>{item.text}</span>
-                     <span className="text-gray-500 dark:text-gray-600 ml-4">•</span>
-                  </div>
-               ))}
+         <div className="relative h-12 flex items-center ticker-wrapper">
+            <div className="flex ticker-scroll whitespace-nowrap">
+               {renderItems()}
             </div>
-
-            {/* Second scroll instance for seamless loop */}
-            <div className="animate-scroll flex items-center gap-8 px-4 whitespace-nowrap absolute left-full">
-               {items.map((item, index) => (
-                  <div
-                     key={`second-${index}`}
-                     className="flex items-center gap-2 text-gray-300 dark:text-gray-400 font-medium text-sm"
-                  >
-                     <span className="text-lg opacity-70">{item.icon}</span>
-                     <span>{item.text}</span>
-                     <span className="text-gray-500 dark:text-gray-600 ml-4">•</span>
-                  </div>
-               ))}
+            <div className="flex ticker-scroll whitespace-nowrap" aria-hidden="true">
+               {renderItems()}
             </div>
          </div>
       </div>

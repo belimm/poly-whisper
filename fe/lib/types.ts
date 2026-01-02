@@ -1,6 +1,11 @@
 export interface MarketMatch {
    market: {
       id: string;
+      question: string;
+      probability: number;
+      volume?: number;
+      category?: string;
+      tags?: string[];
       [key: string]: unknown;
    };
    relevance_score: number;

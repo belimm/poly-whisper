@@ -18,6 +18,7 @@ import IntelligentMarketMatcher from './services/market/intelligentMarketMatcher
 import MarketMatchingService from './services/market/marketMatchingService.js';
 import TweetDatabaseService from './services/database/tweetDatabaseService.js';
 import TweetAnalyzer from './domain/tweetAnalyzer.js';
+import { TrendingMarketPoller } from './services/market/trendingMarketPoller.js';
 
 // Load environment variables
 dotenv.config();
@@ -80,6 +81,19 @@ const marketMatcher = new MarketMatchingService({
    log: console,
 });
 
+// ============================================================================
+// Trending Market Poller (NEW)
+// ============================================================================
+const trendingMarketPoller = new TrendingMarketPoller({
+   catalogService: marketCatalogService,
+   clientWS: clientWS,
+   pollingInterval: parseInt(
+      process.env.MARKET_TRENDING_INTERVAL || '10000',
+      10
+   ), // 10 seconds default
+   log: console,
+});
+
 // Inject services and data into app locals for use in routes
 // Note: We'll need to add proper types for all services
 const appLocals: AppLocals = {
@@ -92,6 +106,7 @@ const appLocals: AppLocals = {
    marketMatcher,
    marketCatalogService,
    intelligentMatcher,
+   trendingMarketPoller,
 };
 
 // Assign to app.locals
@@ -292,6 +307,25 @@ server.listen(PORT, async () => {
       errorLog('⚠️  Intelligent market matching will not be available');
    }
 
+   // ============================================================================
+   // Start Trending Market Poller (NEW)
+   // ============================================================================
+   try {
+      await trendingMarketPoller.start();
+      devLog('✅ Trending Market Poller started');
+
+      const pollerStatus = trendingMarketPoller.getStatus();
+      devLog(
+         `📊 Trending Market Poller: polling every ${pollerStatus.pollingInterval}ms`
+      );
+   } catch (error) {
+      errorLog(
+         '❌ Failed to start Trending Market Poller:',
+         (error as Error).message
+      );
+      errorLog('⚠️  Trending/hot market updates will not be available');
+   }
+
    // Connect to Twitter WebSocket
    twitterWS.connect();
 });
@@ -305,6 +339,10 @@ const shutdown = async (signal: string) => {
       // Stop market catalog service
       marketCatalogService.stop();
       infoLog('✅ Market catalog service stopped');
+
+      // Stop trending market poller
+      trendingMarketPoller.stop();
+      infoLog('✅ Trending market poller stopped');
 
       // Stop accepting new tweets
       twitterWS.disconnect();

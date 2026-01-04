@@ -88,4 +88,62 @@ body {
   animation-play-state: paused;
 }
 
+.ticker-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+.ticker-wrapper:hover .ticker-scroll {
+  animation-play-state: paused;
+}
+
+@keyframes scroll-item {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100vw);
+  }
+}
+
+.animate-scroll-item {
+  animation: scroll-item 30s linear infinite;
+}
+
+.animate-scroll-item:hover {
+  animation-play-state: paused;
+}
+
+/* Loading Spinner Animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-rotate {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse Border Animation for Majority Outcome */
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.9);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
 

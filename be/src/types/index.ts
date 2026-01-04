@@ -230,7 +230,8 @@ export interface ClientWebSocketMessage {
       | 'error'
       | 'pong'
       | 'subscribed'
-      | 'marketUpdate';
+      | 'marketUpdate'
+      | 'trendingMarketUpdate';
    message?: string;
    data?: unknown;
    level?: 'info' | 'warning' | 'error';
@@ -386,6 +387,22 @@ export interface AppLocals {
    marketMatcher: MarketMatchingService;
    marketCatalogService: MarketCatalogService;
    intelligentMatcher: IntelligentMarketMatcher;
+   trendingMarketPoller?: TrendingMarketPoller;
+}
+
+export interface TrendingMarketPoller {
+   start: () => Promise<void>;
+   stop: () => void;
+   fetchAndBroadcast: () => Promise<void>;
+   getLastData: () => unknown;
+   getStatus: () => {
+      isRunning: boolean;
+      pollingInterval: number;
+      lastFetchTime: Date | null;
+      hasData: boolean;
+      catalogReady: boolean;
+      catalogSize: number;
+   };
 }
 
 // Service interfaces

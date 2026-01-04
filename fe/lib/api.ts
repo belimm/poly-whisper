@@ -9,7 +9,8 @@ class PolyWhisperAPI {
 
       // Use production URLs by default, unless explicitly running in local development
       const isLocalDevelopment = process.env.NEXT_PUBLIC_USE_LOCAL === 'true' ||
-                                  (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_API_URL);
+                                  (process.env.NODE_ENV === 'development');
+
 
       this.baseURL = isLocalDevelopment
          ? process.env.NEXT_PUBLIC_LOCAL_API_URL || ''

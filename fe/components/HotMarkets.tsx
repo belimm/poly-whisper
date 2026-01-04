@@ -75,7 +75,7 @@ export default function HotMarkets() {
      <div className="flex flex-col h-full min-h-0">
         {/* Mobile Version with Accordion */}
         <div
-           className={`flex flex-col h-full min-h-0 ${
+           className={`p-4 flex flex-col h-full min-h-0 ${
               hot.length !== 0 && 'bg-background-light dark:bg-background-dark'
            } md:hidden`}>
            <MobileSection
@@ -186,7 +186,7 @@ export default function HotMarkets() {
               hot.length !== 0 && 'bg-background-light dark:bg-background-dark'
            } overflow-y-auto`}>
            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white dark:bg-surface-dark border-b border-[#e5e7eb] dark:border-border-dark">
-              <div className="flex items-center -2">
+              <div className="flex items-center gap-2">
                  <span className="material-symbols-outlined text-orange-500 text-[20px]">
                     local_fire_department
                  </span>
@@ -212,7 +212,7 @@ export default function HotMarkets() {
                  )}
               </div>
            </div>
-           <div className="flex-1 flex flex-col gap-3">
+           <div className="flex-1 flex flex-col gap-3 p-4">
               {hot.length === 0 && (
                  <div className="p-4 text-center text-sm text-gray-500">
                     <TypewriterEffect text="Loading hot markets" />
@@ -229,8 +229,8 @@ export default function HotMarkets() {
                  return (
                     <div
                        key={market.id}
-                       className="group relative flex flex-col gap-2 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:border-orange-500/50 dark:hover:border-orange-500/50 cursor-pointer transition-all">
-                       <div className="flex items-start justify-between">
+                       className="group relative flex flex-col gap-2 p-4 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:border-orange-500/50 dark:hover:border-orange-500/50 cursor-pointer transition-all">
+                       <div className="flex items-center justify-between">
                           <div className="flex flex-col">
                              <div className="flex items-center gap-1.5 mb-1">
                                 <span

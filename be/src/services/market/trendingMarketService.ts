@@ -44,13 +44,13 @@ export interface ProcessedMarket extends Omit<MarketCatalogRow, 'outcomes'> {
    liquidityDisplay: string;
 
    // Price changes
-   priceChange1h: number;
    priceChange24h: number;
    priceChange1wk: number;
    priceChange1mo: number;
 
    // Computed scores
    volumeSpike: number;
+   volumeChange24h: number;
    volatilityScore: number;
    hotScore: number;
 
@@ -203,20 +203,26 @@ function processMarket(market: MarketCatalogRow): ProcessedMarket {
    const volumeSpike =
       avgDailyVolume > 0 ? (volume24h / avgDailyVolume - 1) * 100 : 0;
 
-   // Calculate volatility score
-   const priceChange1h = 0; // Not available in current schema
-   const priceChange24h = market.one_day_price_change || 0;
-   const volatilityScore =
-      Math.abs(priceChange1h) * 3 + Math.abs(priceChange24h);
+   // Calculate 24h volume change percentage
+   // Total volume includes the 24h volume, so previous volume = total - 24h
+   const totalVolume = market.volume_num || 0;
+   const previousVolume = totalVolume - volume24h;
+   const volumeChange24h =
+      previousVolume > 0 ? (volume24h / previousVolume) * 100 : 0;
 
-   // Calculate hot score
+
+   // Calculate volatility score
+   const priceChange24h = market.one_day_price_change || 0;
+   const volatilityScore = Math.abs(priceChange24h);
+
+   // Calculate hot score (weighted by 24h price change and volume spike)
    const hotScore =
-      Math.abs(priceChange1h) * 300 +
       Math.abs(priceChange24h) * 100 +
       Math.max(0, volumeSpike) * 0.5;
 
    return {
       ...market,
+      
       category,
       categoryLabel: categoryConfig.label,
       categoryIcon: categoryConfig.icon,
@@ -233,12 +239,12 @@ function processMarket(market: MarketCatalogRow): ProcessedMarket {
       volume24hDisplay: formatVolume(volume24h),
       liquidityDisplay: formatVolume(market.liquidity),
 
-      priceChange1h,
       priceChange24h,
       priceChange1wk: market.one_week_price_change || 0,
       priceChange1mo: market.one_month_price_change || 0,
 
       volumeSpike,
+      volumeChange24h,
       volatilityScore,
       hotScore,
 
@@ -250,12 +256,21 @@ function processMarket(market: MarketCatalogRow): ProcessedMarket {
  * Determine the hot reason for a market
  */
 function getHotReason(market: ProcessedMarket): HotMarket['hotReason'] {
-   if (market.priceChange1h > 0.05) return 'RAPID_RISE';
-   if (market.priceChange1h < -0.05) return 'SELL_OFF';
+   // Check for rapid price changes (24h)
+   if (market.priceChange24h > 0.08) return 'RAPID_RISE';
+   if (market.priceChange24h < -0.08) return 'SELL_OFF';
+
+   // Check for volume spikes
    if (market.volumeSpike > 200) return 'VOLUME_SPIKE';
+
+   // Check for moderate price changes
    if (market.priceChange24h > 0.03) return 'RISING';
    if (market.priceChange24h < -0.03) return 'FALLING';
+
+   // Check for high activity
    if (market.volumeSpike > 50) return 'HIGH_ACTIVITY';
+
+   // Default to volatile
    return 'VOLATILE';
 }
 
@@ -320,25 +335,21 @@ function getTrendingMarkets(allMarkets: MarketCatalogRow[]): TrendingMarket[] {
       }
    }
 
-   // Sort by category priority
-   let result = trending.sort(
-      (a, b) => a.categoryPriority - b.categoryPriority
-   );
-
    // If not enough trending markets, add highest volume markets
-   if (result.length < MIN_TRENDING_MARKETS) {
-      const remainingNeeded = MIN_TRENDING_MARKETS - result.length;
-      const existingIds = new Set(result.map((m) => m.id));
+   if (trending.length < MIN_TRENDING_MARKETS) {
+      const remainingNeeded = MIN_TRENDING_MARKETS - trending.length;
+      const existingIds = new Set(trending.map((m) => m.id));
       const additional = processed
          .filter((m) => !existingIds.has(m.id))
          .sort((a, b) => (b.volume_num || 0) - (a.volume_num || 0))
          .slice(0, remainingNeeded)
          .map((m) => ({ ...m, isTrending: true as const }));
 
-      result = [...result, ...additional];
+      trending.push(...additional);
    }
 
-   return result;
+   // Sort by descending volume (total volume)
+   return trending.sort((a, b) => (b.volume_num || 0) - (a.volume_num || 0));
 }
 
 /**
@@ -355,7 +366,6 @@ function getHotMarkets(allMarkets: MarketCatalogRow[]): HotMarket[] {
          (m) =>
             m.hotScore > 5 ||
             m.volumeSpike > 50 ||
-            Math.abs(m.priceChange1h) > 0.02 ||
             Math.abs(m.priceChange24h) > 0.05
       )
       .sort((a, b) => b.hotScore - a.hotScore)
@@ -409,7 +419,25 @@ function getHotMarkets(allMarkets: MarketCatalogRow[]): HotMarket[] {
       hot = [...hot, ...fallback];
    }
 
-   return hot.slice(0, 10);
+   // Sort by hot reason priority: RAPID_RISE > VOLUME_SPIKE > SELL_OFF > others
+   const reasonPriority: Record<HotMarket['hotReason'], number> = {
+      RAPID_RISE: 1,
+      VOLUME_SPIKE: 2,
+      SELL_OFF: 3,
+      RISING: 4,
+      FALLING: 5,
+      HIGH_ACTIVITY: 6,
+      NEWS_BREAK: 7,
+      VOLATILE: 8,
+   };
+
+   return hot
+      .sort((a, b) => {
+         const priorityDiff = reasonPriority[a.hotReason] - reasonPriority[b.hotReason];
+         // If same priority, sort by hotScore descending
+         return priorityDiff !== 0 ? priorityDiff : b.hotScore - a.hotScore;
+      })
+      .slice(0, 10);
 }
 
 /**

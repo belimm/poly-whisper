@@ -79,13 +79,11 @@ export default function TrendingMarkets() {
                           <div className="grid grid-cols-2 gap-2">
                              {(() => {
                                 const outcomes = market.outcomes.slice(0, 2);
-                                const noPrice = market.noPriceDisplay;
-                                const yesPrice = market.yesPriceDisplay;
-                                const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('%', '')));
+                                const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('¢', '')));
                                 const maxPrice = Math.max(...prices);
 
                                 return outcomes.map((outcome, idx) => {
-                                   const price = parseFloat(outcome.priceDisplay.replace('%', ''));
+                                   const price = parseFloat(outcome.priceDisplay.replace('¢', ''));
                                    const isMajority = price === maxPrice && prices.filter(p => p === maxPrice).length === 1;
 
                                    return (
@@ -100,7 +98,7 @@ export default function TrendingMarkets() {
                                             {outcome.name}
                                          </span>
                                          <span className={`text-sm font-bold ${isMajority ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
-                                            {market.noPriceDisplay}
+                                            {outcome.priceDisplay}
                                          </span>
                                       </div>
                                    );
@@ -193,11 +191,11 @@ export default function TrendingMarkets() {
                        <div className="grid grid-cols-2 gap-2">
                           {(() => {
                              const outcomes = market.outcomes.slice(0, 2);
-                             const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('%', '')));
+                             const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('¢', '')));
                              const maxPrice = Math.max(...prices);
 
                              return outcomes.map((outcome, idx) => {
-                                const price = parseFloat(outcome.priceDisplay.replace('%', ''));
+                                const price = parseFloat(outcome.priceDisplay.replace('¢', ''));
                                 const isMajority = price === maxPrice && prices.filter(p => p === maxPrice).length === 1;
 
                                 return (

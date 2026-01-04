@@ -29,7 +29,6 @@ interface Market {
   volumeDisplay: string
   volume24hDisplay: string
   liquidityDisplay: string
-  priceChange1h: number
   priceChange24h: number
   priceChange1wk: number
   priceChange1mo: number
@@ -38,6 +37,7 @@ interface Market {
   spread?: number
   endDate?: string
   volumeSpike: number
+  volumeChange24h: number
   volatilityScore: number
   hotScore: number
   tags: string[]

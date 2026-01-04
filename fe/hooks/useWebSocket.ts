@@ -20,7 +20,7 @@ interface Market {
   outcomes?: Array<{
     name: string
     price: number
-    priceDisplay: string
+    priceDisplay: string,
   }>
   volume: number
   volume24h: number

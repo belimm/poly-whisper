@@ -85,7 +85,7 @@ export default function HotMarkets() {
               statusBadge={statusBadge}>
               <div className="flex flex-col gap-3">
                  {hot.length === 0 && (
-                    <div className="p-4 text-center text-sm text-gray-500">
+                    <div className="p-4 text-center text-md text-gray-500">
                        <TypewriterEffect text="Loading hot markets" />
                     </div>
                  )}
@@ -214,7 +214,7 @@ export default function HotMarkets() {
            </div>
            <div className="flex-1 flex flex-col gap-3 p-4">
               {hot.length === 0 && (
-                 <div className="p-4 text-center text-sm text-gray-500">
+                 <div className="p-4 text-center text-md text-gray-500">
                     <TypewriterEffect text="Loading hot markets" />
                  </div>
               )}

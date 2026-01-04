@@ -50,7 +50,7 @@ export default function TrendingMarkets() {
               icon="trending_up"
               statusBadge={statusBadge}>
               {trending.length === 0 && (
-                 <div className="p-4 text-center text-sm text-gray-500">
+                 <div className="p-4 text-center text-md text-gray-500">
                     <TypewriterEffect text="Loading hot markets" />
                  </div>
               )}
@@ -58,7 +58,7 @@ export default function TrendingMarkets() {
                  {displayedMarkets.map((market) => (
                     <div
                        key={market.id}
-                       className="p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
+                       className="p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group hover:border-orange-500/50 dark:hover:border-orange-500/50">
                        <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                              <div className="text-lg">
@@ -69,7 +69,7 @@ export default function TrendingMarkets() {
                              </span>
                           </div>
                           <span className="text-xs text-[#617589]">
-                             {market.volume24hDisplay}
+                             {market.volumeDisplay}
                           </span>
                        </div>
                        <h4 className="text-sm font-bold text-[#111418] dark:text-white mb-3 group-hover:text-primary transition-colors">
@@ -77,20 +77,35 @@ export default function TrendingMarkets() {
                        </h4>
                        {market.outcomes && market.outcomes.length > 0 ? (
                           <div className="grid grid-cols-2 gap-2">
-                             {market.outcomes
-                                .slice(0, 2)
-                                .map((outcome, idx) => (
-                                   <div
-                                      key={idx}
-                                      className="bg-gray-100 dark:bg-black/20 rounded p-2 flex justify-between items-center border border-transparent hover:border-primary/30 transition-colors">
-                                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate mr-2">
-                                         {outcome.name}
-                                      </span>
-                                      <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                         {outcome.priceDisplay}
-                                      </span>
-                                   </div>
-                                ))}
+                             {(() => {
+                                const outcomes = market.outcomes.slice(0, 2);
+                                const noPrice = market.noPriceDisplay;
+                                const yesPrice = market.yesPriceDisplay;
+                                const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('%', '')));
+                                const maxPrice = Math.max(...prices);
+
+                                return outcomes.map((outcome, idx) => {
+                                   const price = parseFloat(outcome.priceDisplay.replace('%', ''));
+                                   const isMajority = price === maxPrice && prices.filter(p => p === maxPrice).length === 1;
+
+                                   return (
+                                      <div
+                                         key={idx}
+                                         className={`bg-gray-100 dark:bg-black/20 rounded p-2 flex justify-between items-center border transition-all ${
+                                            isMajority
+                                               ? 'border-primary/60 shadow-[0_0_12px_rgba(59,130,246,0.3)] animate-pulse-border'
+                                               : 'border-transparent hover:border-primary/30'
+                                         }`}>
+                                         <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate mr-2">
+                                            {outcome.name}
+                                         </span>
+                                         <span className={`text-sm font-bold ${isMajority ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
+                                            {market.noPriceDisplay}
+                                         </span>
+                                      </div>
+                                   );
+                                });
+                             })()}
                           </div>
                        ) : (
                           <div className="flex items-center justify-between bg-gray-100 dark:bg-black/20 rounded p-2">
@@ -127,7 +142,11 @@ export default function TrendingMarkets() {
         </div>
 
         {/* Desktop Version */}
-        <div className="hidden md:flex flex-col max-h-full min-h-0 bg-background-light dark:bg-background-dark overflow-y-auto">
+        <div
+           className={`hidden md:flex flex-col max-h-full min-h-0 ${
+              trending.length !== 0 &&
+              'bg-background-light dark:bg-background-dark'
+           } overflow-y-auto`}>
            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-white dark:bg-surface-dark border-b border-[#e5e7eb] dark:border-border-dark">
               <div className="flex items-center gap-2">
                  <span className="material-symbols-outlined text-primary text-[20px]">
@@ -148,14 +167,14 @@ export default function TrendingMarkets() {
            </div>
            <div className="flex-1 flex flex-col gap-3 p-4">
               {trending.length === 0 && (
-                 <div className="p-4 text-center text-sm text-gray-500">
+                 <div className="p-4 text-center text-md text-gray-500">
                     <TypewriterEffect text="Loading hot markets" />
                  </div>
               )}
               {trending.map((market) => (
                  <div
                     key={market.id}
-                    className="p-4 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group shadow-sm">
+                    className="p-4 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors cursor-pointer group shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                        <div className="flex items-center gap-2">
                           <div className="text-lg">{market.categoryIcon}</div>
@@ -164,7 +183,7 @@ export default function TrendingMarkets() {
                           </span>
                        </div>
                        <span className="text-xs text-[#617589]">
-                          {market.volume24hDisplay}
+                          {market.volumeDisplay}
                        </span>
                     </div>
                     <h4 className="text-sm font-bold text-[#111418] dark:text-white mb-3 group-hover:text-primary transition-colors">
@@ -172,18 +191,33 @@ export default function TrendingMarkets() {
                     </h4>
                     {market.outcomes && market.outcomes.length > 0 ? (
                        <div className="grid grid-cols-2 gap-2">
-                          {market.outcomes.slice(0, 2).map((outcome, idx) => (
-                             <div
-                                key={idx}
-                                className="bg-gray-100 dark:bg-black/20 rounded p-2 flex justify-between items-center border border-transparent hover:border-primary/30 transition-colors">
-                                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate mr-2">
-                                   {outcome.name}
-                                </span>
-                                <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                   {outcome.priceDisplay}
-                                </span>
-                             </div>
-                          ))}
+                          {(() => {
+                             const outcomes = market.outcomes.slice(0, 2);
+                             const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('%', '')));
+                             const maxPrice = Math.max(...prices);
+
+                             return outcomes.map((outcome, idx) => {
+                                const price = parseFloat(outcome.priceDisplay.replace('%', ''));
+                                const isMajority = price === maxPrice && prices.filter(p => p === maxPrice).length === 1;
+
+                                return (
+                                   <div
+                                      key={idx}
+                                      className={`bg-gray-100 dark:bg-black/20 rounded p-2 flex justify-between items-center border transition-all ${
+                                         isMajority
+                                            ? 'border-primary/60 shadow-[0_0_12px_rgba(59,130,246,0.3)] animate-pulse-border'
+                                            : 'border-transparent hover:border-primary/30'
+                                      }`}>
+                                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate mr-2">
+                                         {outcome.name}
+                                      </span>
+                                      <span className={`text-sm font-bold ${isMajority ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
+                                         {outcome.priceDisplay}
+                                      </span>
+                                   </div>
+                                );
+                             });
+                          })()}
                        </div>
                     ) : (
                        <div className="flex items-center justify-between bg-gray-100 dark:bg-black/20 rounded p-2">

@@ -190,11 +190,11 @@ function processMarket(market: MarketCatalogRow): ProcessedMarket {
       outcomes = outcomeNames.map((name: string, i: number) => ({
          name,
          price: parseFloat(prices[i]) || 0,
-         priceDisplay: `${Math.round((parseFloat(prices[i]) || 0) * 100)}¢`,
+         priceDisplay: `${((parseFloat(prices[i]) || 0)).toFixed(2)}¢`,
       }));
    } catch {
       // Keep null
-   }
+   }  
 
    // Calculate volume spike (24h volume vs 7-day average)
    const volume24h = market.volume_24hr || 0;
@@ -224,8 +224,8 @@ function processMarket(market: MarketCatalogRow): ProcessedMarket {
 
       yesPrice,
       noPrice,
-      yesPriceDisplay: `${Math.round(yesPrice * 100)}¢`,
-      noPriceDisplay: `${Math.round(noPrice * 100)}¢`,
+      yesPriceDisplay: `${yesPrice.toFixed(2)}¢`,
+      noPriceDisplay: `${noPrice.toFixed(2)}¢`,
       probability: Math.round(yesPrice * 100),
       outcomes,
 

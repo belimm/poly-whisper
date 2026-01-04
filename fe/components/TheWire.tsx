@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { EnrichedTweet } from '@/lib/types';
 import MobileSection from './MobileSection';
+import LoadingSpinner from './LoadingSpinner/LoadingSpinner';
 
 interface TheWireProps {
    tweets: EnrichedTweet[];
@@ -210,9 +211,7 @@ export default function TheWire({
                }>
                <div className="p-4 flex flex-col gap-4">
                   {loading && tweets.length === 0 && (
-                     <div className="flex items-center justify-center h-full">
-                        <p className="text-gray-500">Loading tweets...</p>
-                     </div>
+                     <LoadingSpinner />
                   )}
 
                   {error && (
@@ -275,9 +274,7 @@ export default function TheWire({
             </div>
             <div className="flex-1 p-4 flex flex-col gap-4">
                {loading && tweets.length === 0 && (
-                  <div className="flex items-center justify-center h-full">
-                     <p className="text-gray-500">Loading tweets...</p>
-                  </div>
+                  <LoadingSpinner />
                )}
 
                {error && (

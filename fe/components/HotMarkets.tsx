@@ -11,6 +11,10 @@ export default function HotMarkets() {
    const [isMobile, setIsMobile] = useState(false);
    const [isMounted, setIsMounted] = useState(false);
 
+   const handleMarketClick = (slug: string) => {
+      window.open(`https://polymarket.com/event/${slug}`, '_blank', 'noopener,noreferrer');
+   };
+
    useEffect(() => {
       setIsMounted(true);
       const checkMobile = () => {
@@ -90,7 +94,7 @@ export default function HotMarkets() {
                         <TypewriterEffect text="Loading hot markets" />
                      </div>
                   )}
-                  {displayedMarkets.map((market) => {
+                  {displayedMarkets.map((market: any) => {
                      const icon = getHotReasonIcon(market.hotReason);
                      const reasonConfig = market.hotReasonConfig || {
                         label: 'VOLATILE',
@@ -101,6 +105,11 @@ export default function HotMarkets() {
                      return (
                         <div
                            key={market.id}
+                           onClick={() =>
+                              handleMarketClick(
+                                 market.market_data.events[0].slug
+                              )
+                           }
                            className="group relative flex flex-col gap-2 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:border-orange-500/50 dark:hover:border-orange-500/50 cursor-pointer transition-all">
                            <div className="flex items-start justify-between">
                               <div className="flex flex-col">
@@ -230,6 +239,7 @@ export default function HotMarkets() {
                   return (
                      <div
                         key={market.id}
+                        onClick={() => handleMarketClick(market.market_data.events[0].slug)}
                         className="group relative flex flex-col gap-2 p-4 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark p-4 shadow-sm hover:border-orange-500/50 dark:hover:border-orange-500/50 cursor-pointer transition-all">
                         <div className="flex items-center justify-between">
                            <div className="flex flex-col">

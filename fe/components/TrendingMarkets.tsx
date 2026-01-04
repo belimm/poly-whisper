@@ -11,6 +11,10 @@ export default function TrendingMarkets() {
   const [isMobile, setIsMobile] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
+  const handleMarketClick = (slug: string) => {
+    window.open(`https://polymarket.com/event/${slug}`, '_blank', 'noopener,noreferrer')
+  }
+
   useEffect(() => {
     setIsMounted(true)
     const checkMobile = () => {
@@ -58,6 +62,9 @@ export default function TrendingMarkets() {
                  {displayedMarkets.map((market) => (
                     <div
                        key={market.id}
+                       onClick={() =>
+                          handleMarketClick(market.market_data.events[0].slug)
+                       }
                        className="p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer group hover:border-orange-500/50 dark:hover:border-orange-500/50">
                        <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
@@ -79,12 +86,19 @@ export default function TrendingMarkets() {
                           <div className="grid grid-cols-2 gap-2">
                              {(() => {
                                 const outcomes = market.outcomes.slice(0, 2);
-                                const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('¢', '')));
+                                const prices = outcomes.map((o) =>
+                                   parseFloat(o.priceDisplay.replace('¢', ''))
+                                );
                                 const maxPrice = Math.max(...prices);
 
                                 return outcomes.map((outcome, idx) => {
-                                   const price = parseFloat(outcome.priceDisplay.replace('¢', ''));
-                                   const isMajority = price === maxPrice && prices.filter(p => p === maxPrice).length === 1;
+                                   const price = parseFloat(
+                                      outcome.priceDisplay.replace('¢', '')
+                                   );
+                                   const isMajority =
+                                      price === maxPrice &&
+                                      prices.filter((p) => p === maxPrice)
+                                         .length === 1;
 
                                    return (
                                       <div
@@ -97,7 +111,12 @@ export default function TrendingMarkets() {
                                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate mr-2">
                                             {outcome.name}
                                          </span>
-                                         <span className={`text-sm font-bold ${isMajority ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
+                                         <span
+                                            className={`text-sm font-bold ${
+                                               isMajority
+                                                  ? 'text-primary'
+                                                  : 'text-gray-900 dark:text-white'
+                                            }`}>
                                             {outcome.priceDisplay}
                                          </span>
                                       </div>
@@ -172,6 +191,9 @@ export default function TrendingMarkets() {
               {trending.map((market) => (
                  <div
                     key={market.id}
+                    onClick={() =>
+                       handleMarketClick(market.market_data.events[0].slug)
+                    }
                     className="p-4 rounded-lg border border-[#e5e7eb] dark:border-border-dark bg-white dark:bg-surface-dark hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors cursor-pointer group shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                        <div className="flex items-center gap-2">
@@ -191,12 +213,19 @@ export default function TrendingMarkets() {
                        <div className="grid grid-cols-2 gap-2">
                           {(() => {
                              const outcomes = market.outcomes.slice(0, 2);
-                             const prices = outcomes.map(o => parseFloat(o.priceDisplay.replace('¢', '')));
+                             const prices = outcomes.map((o) =>
+                                parseFloat(o.priceDisplay.replace('¢', ''))
+                             );
                              const maxPrice = Math.max(...prices);
 
                              return outcomes.map((outcome, idx) => {
-                                const price = parseFloat(outcome.priceDisplay.replace('¢', ''));
-                                const isMajority = price === maxPrice && prices.filter(p => p === maxPrice).length === 1;
+                                const price = parseFloat(
+                                   outcome.priceDisplay.replace('¢', '')
+                                );
+                                const isMajority =
+                                   price === maxPrice &&
+                                   prices.filter((p) => p === maxPrice)
+                                      .length === 1;
 
                                 return (
                                    <div
@@ -209,7 +238,12 @@ export default function TrendingMarkets() {
                                       <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate mr-2">
                                          {outcome.name}
                                       </span>
-                                      <span className={`text-sm font-bold ${isMajority ? 'text-primary' : 'text-gray-900 dark:text-white'}`}>
+                                      <span
+                                         className={`text-sm font-bold ${
+                                            isMajority
+                                               ? 'text-primary'
+                                               : 'text-gray-900 dark:text-white'
+                                         }`}>
                                          {outcome.priceDisplay}
                                       </span>
                                    </div>

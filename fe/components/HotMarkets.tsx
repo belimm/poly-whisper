@@ -129,20 +129,20 @@ export default function HotMarkets() {
                                     {market.question}
                                  </h4>
                               </div>
-                              <div className="flex flex-col items-end">
+                              <div className="flex flex-col items-end gap-0.5">
                                  <span
-                                    className={`text-sm font-bold ${
+                                    className={`text-sm font-bold px-2 py-0.5 rounded ${
                                        market.priceChange24h > 0
-                                          ? 'text-green-500'
+                                          ? 'text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400'
                                           : market.priceChange24h < 0
-                                          ? 'text-red-500'
-                                          : 'text-gray-500'
+                                          ? 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400'
+                                          : 'text-gray-500 bg-gray-50 dark:bg-gray-800'
                                     }`}>
                                     {market.priceChange24h > 0 ? '+' : ''}
                                     {(market.priceChange24h * 100).toFixed(1)}%
                                  </span>
-                                 <span className="text-[10px] text-gray-500">
-                                    Last 24h
+                                 <span className="text-[10px] text-gray-500 font-medium">
+                                    24h change
                                  </span>
                               </div>
                            </div>
@@ -157,20 +157,31 @@ export default function HotMarkets() {
                            <div className="flex items-center justify-between mt-1 pt-2 border-t border-dashed border-gray-100 dark:border-gray-800">
                               <span
                                  className={`text-xs ${
-                                    market.volumeSpike > 100
+                                    market.volumeChange24h > 100
                                        ? 'font-bold'
                                        : 'text-gray-500'
                                  }`}
                                  style={
-                                    market.volumeSpike > 100
+                                    market.volumeChange24h > 100 && market.volumeChange24h <= 999
                                        ? { color: reasonConfig.color }
                                        : {}
                                  }>
-                                 {market.volumeSpike > 100
-                                    ? `Vol: +${Math.round(
-                                         market.volumeSpike
-                                      )}% (24h)`
-                                    : `Vol: ${market.volume24hDisplay}`}
+                                 {market.volumeChange24h > 999 ? (
+                                    <>
+                                       <span className="inline-flex items-center gap-1">
+                                          <span className="px-1.5 py-0.5 bg-orange-500/10 text-orange-500 rounded text-[10px] font-bold border border-orange-500/20">
+                                             NEW
+                                          </span>
+                                          <span className="text-gray-500">
+                                             High activity
+                                          </span>
+                                       </span>
+                                    </>
+                                 ) : market.volumeChange24h > 100 ? (
+                                    `Vol: +${Math.round(market.volumeChange24h)}% (24h)`
+                                 ) : (
+                                    `Vol: ${market.volume24hDisplay}`
+                                 )}
                               </span>
                               <span className="text-xs font-mono font-bold text-[#111418] dark:text-gray-300">
                                  YES: {market.yesPriceDisplay}
@@ -259,20 +270,20 @@ export default function HotMarkets() {
                                  {market.question}
                               </h4>
                            </div>
-                           <div className="flex flex-col items-end">
+                           <div className="flex flex-col items-end gap-0.5">
                               <span
-                                 className={`text-sm font-bold ${
+                                 className={`text-sm font-bold px-2 py-0.5 rounded ${
                                     market.priceChange24h > 0
-                                       ? 'text-green-500'
+                                       ? 'text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400'
                                        : market.priceChange24h < 0
-                                       ? 'text-red-500'
-                                       : 'text-gray-500'
+                                       ? 'text-red-600 bg-red-50 dark:bg-red-950/30 dark:text-red-400'
+                                       : 'text-gray-500 bg-gray-50 dark:bg-gray-800'
                                  }`}>
                                  {market.priceChange24h > 0 ? '+' : ''}
                                  {(market.priceChange24h * 100).toFixed(1)}%
                               </span>
-                              <span className="text-[10px] text-gray-500">
-                                 Last 24h
+                              <span className="text-[10px] text-gray-500 font-medium">
+                                 24h change
                               </span>
                            </div>
                         </div>
@@ -290,18 +301,31 @@ export default function HotMarkets() {
                         <div className="flex items-center justify-between mt-1 pt-2 border-t border-dashed border-gray-100 dark:border-gray-800">
                            <span
                               className={`text-xs ${
-                                 market.volumeSpike > 100
+                                 market.volumeChange24h > 100
                                     ? 'font-bold'
                                     : 'text-gray-500'
                               }`}
                               style={
                                  market.volumeChange24h > 0
-                                    ? { color: '#00ff00' }
-                                    : { color: '#ff0000' }
+                                    ? { color: reasonConfig.color }
+                                    : {}
                               }>
-                              {`Vol: +${market.volumeChange24h.toFixed(
-                                 2
-                              )}% (24h)`}
+                              {market.volumeChange24h > 999 ? (
+                                 <>
+                                    <span className="inline-flex items-center gap-1">
+                                       <span className="px-1.5 py-0.5 bg-orange-500/10 text-orange-500 rounded text-[10px] font-bold border border-orange-500/20">
+                                          NEW
+                                       </span>
+                                       <span className="text-gray-500">
+                                          High activity
+                                       </span>
+                                    </span>
+                                 </>
+                              ) : market.volumeChange24h > 100 ? (
+                                 `Vol: +${Math.round(market.volumeChange24h)}% (24h)`
+                              ) : (
+                                 `Vol: ${market.volume24hDisplay}`
+                              )}
                            </span>
                            <span className="text-xs font-mono font-bold text-[#111418] dark:text-gray-300">
                               YES:{' '}

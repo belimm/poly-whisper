@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EnrichedTweet } from '@/lib/types';
 import { useMarkets } from '@/hooks/useMarkets';
 
@@ -26,7 +26,20 @@ export default function TweetDetailModal({
       qc: 1,
    });
 
-   const market = markets[0];
+   // Carousel state
+   const [currentMarketIndex, setCurrentMarketIndex] = useState(0);
+
+   const market = markets[currentMarketIndex] || markets[0];
+   const hasMultipleMarkets = markets.length > 1;
+
+   // Navigation handlers
+   const goToNextMarket = () => {
+      setCurrentMarketIndex((prev) => (prev + 1) % markets.length);
+   };
+
+   const goToPrevMarket = () => {
+      setCurrentMarketIndex((prev) => (prev - 1 + markets.length) % markets.length);
+   };
 
    // Parse outcomes and outcome prices
    const parsedOutcomes = market
@@ -90,16 +103,24 @@ export default function TweetDetailModal({
       return absNum.toFixed(4).replace(/\.?0+$/, '');
    };
 
-   // ESC key to close
+   // Keyboard navigation (ESC to close, Arrow keys for carousel)
    useEffect(() => {
-      const handleEsc = (e: KeyboardEvent) => {
+      const handleKeyDown = (e: KeyboardEvent) => {
          if (e.key === 'Escape') {
             onClose();
+         } else if (hasMultipleMarkets) {
+            if (e.key === 'ArrowRight') {
+               e.preventDefault();
+               goToNextMarket();
+            } else if (e.key === 'ArrowLeft') {
+               e.preventDefault();
+               goToPrevMarket();
+            }
          }
       };
-      window.addEventListener('keydown', handleEsc);
-      return () => window.removeEventListener('keydown', handleEsc);
-   }, [onClose]);
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+   }, [onClose, hasMultipleMarkets, goToNextMarket, goToPrevMarket]);
 
    // Prevent body scroll when modal is open
    useEffect(() => {
@@ -386,12 +407,46 @@ export default function TweetDetailModal({
                         {/* Market Action Card */}
                         {market && (
                            <div className="flex flex-col gap-3">
-                              <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold px-1">
-                                 <span className="material-symbols-outlined text-[16px]">
-                                    candlestick_chart
-                                 </span>
-                                 Associated Market
+                              <div className="flex items-center justify-between px-1">
+                                 <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider font-bold">
+                                    <span className="material-symbols-outlined text-[16px]">
+                                       candlestick_chart
+                                    </span>
+                                    Associated Market{hasMultipleMarkets && 's'}
+                                 </div>
+                                 {hasMultipleMarkets && (
+                                    <div className="flex items-center gap-2">
+                                       <span className="text-[10px] text-gray-500 font-mono">
+                                          {currentMarketIndex + 1} / {markets.length}
+                                       </span>
+                                    </div>
+                                 )}
                               </div>
+                              <div className="relative">
+                                 {/* Previous Button */}
+                                 {hasMultipleMarkets && (
+                                    <button
+                                       onClick={goToPrevMarket}
+                                       className="absolute left-0 top-1/2 -translate-y-1/2 z-10 -translate-x-3 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:border-primary transition-all flex items-center justify-center group/btn shadow-lg"
+                                       aria-label="Previous market">
+                                       <span className="material-symbols-outlined text-gray-400 group-hover/btn:text-primary text-[20px]">
+                                          chevron_left
+                                       </span>
+                                    </button>
+                                 )}
+
+                                 {/* Next Button */}
+                                 {hasMultipleMarkets && (
+                                    <button
+                                       onClick={goToNextMarket}
+                                       className="absolute right-0 top-1/2 -translate-y-1/2 z-10 translate-x-3 w-8 h-8 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:border-primary transition-all flex items-center justify-center group/btn shadow-lg"
+                                       aria-label="Next market">
+                                       <span className="material-symbols-outlined text-gray-400 group-hover/btn:text-primary text-[20px]">
+                                          chevron_right
+                                       </span>
+                                    </button>
+                                 )}
+
                               <div className="bg-surface-dark rounded-lg border border-gray-700 p-0 flex flex-col h-full overflow-hidden hover:border-gray-500 transition-colors shadow-lg group">
                                  {/* Market Header */}
                                  <div className="p-4 bg-gray-800/50 border-b border-gray-700">
@@ -600,6 +655,25 @@ export default function TweetDetailModal({
                                     )}
                                  </div>
                               </div>
+
+                              {/* Carousel Indicators */}
+                              {hasMultipleMarkets && (
+                                 <div className="flex items-center justify-center gap-2 mt-3">
+                                    {markets.map((_, idx) => (
+                                       <button
+                                          key={idx}
+                                          onClick={() => setCurrentMarketIndex(idx)}
+                                          className={`h-1.5 rounded-full transition-all ${
+                                             idx === currentMarketIndex
+                                                ? 'w-6 bg-primary'
+                                                : 'w-1.5 bg-gray-700 hover:bg-gray-600'
+                                          }`}
+                                          aria-label={`Go to market ${idx + 1}`}
+                                       />
+                                    ))}
+                                 </div>
+                              )}
+                           </div>
                            </div>
                         )}
 
@@ -645,12 +719,25 @@ export default function TweetDetailModal({
                         System Status:{' '}
                         <span className="text-green-500">ONLINE</span>
                      </span>
-                     <span className="text-gray-500 font-mono flex items-center gap-1">
-                        <span className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
-                           ESC
-                        </span>{' '}
-                        to close
-                     </span>
+                     <div className="flex items-center gap-3">
+                        {hasMultipleMarkets && (
+                           <span className="text-gray-500 font-mono flex items-center gap-1">
+                              <span className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
+                                 ←
+                              </span>
+                              <span className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
+                                 →
+                              </span>{' '}
+                              navigate
+                           </span>
+                        )}
+                        <span className="text-gray-500 font-mono flex items-center gap-1">
+                           <span className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
+                              ESC
+                           </span>{' '}
+                           to close
+                        </span>
+                     </div>
                   </div>
                </div>
             </div>

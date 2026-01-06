@@ -123,7 +123,7 @@ function TweetCard({
                      )}`}>
                      {getSentimentLabel(tweet.analysis.sentiment)}
                   </span>
-                  <div className="h-4 w-px bg-[#e5e7eb] dark:bg-border-dark"></div>
+                  {/* <div className="h-4 w-px bg-[#e5e7eb] dark:bg-border-dark"></div>
                   <a
                      className="flex items-center gap-1 text-primary text-xs hover:underline"
                      href={tweet.tweetDetails.url}
@@ -133,7 +133,7 @@ function TweetCard({
                      <span className="material-symbols-outlined text-[14px]">
                         arrow_outward
                      </span>
-                  </a>
+                  </a> */}
                </div>
                <a
                   href={tweetUrl}

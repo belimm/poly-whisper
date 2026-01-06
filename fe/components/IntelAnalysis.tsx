@@ -162,41 +162,91 @@ export default function IntelAnalysis({
                            onClick={() => handleCardClick(tweet)}
                            onMouseEnter={() => setHoveredTweetId(tweet.tweetDetails.tweetId)}
                            onMouseLeave={() => setHoveredTweetId(null)}
-                           className={`rounded-lg border bg-[#0f1419] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer ${borderClasses}`}>
-                           {/* Header */}
-                           <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs text-gray-400">
-                                 Ref: @{tweet.tweetDetails.authorUsername}
-                              </span>
-                              <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-800 px-2 py-0.5 rounded">
-                                 TWEET
+                           className={`rounded-lg border bg-[#0f1419] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer ${borderClasses}`}>
+                           {/* Compact Header */}
+                           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                              <div className="flex items-center gap-2">
+                                 <div
+                                    className="w-7 h-7 rounded-full bg-cover bg-center border border-gray-700"
+                                    style={{ backgroundImage: `url("${tweet.tweetDetails.authorAvatarURL}")` }}
+                                 />
+                                 <span className="text-[10px] text-gray-400 font-medium">
+                                    @{tweet.tweetDetails.authorUsername}
+                                 </span>
+                              </div>
+                              <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">
+                                 Analysis
                               </span>
                            </div>
 
-                           {/* Sentiment Analysis */}
+                           {/* Sentiment Score with Visual Meter */}
                            <div className="mb-4">
-                              <h4 className="text-xs font-bold text-white mb-2">
-                                 Sentiment Analysis
-                              </h4>
-                              <div className="flex items-center justify-between">
-                                 <span className={`text-xs font-bold ${sentimentInfo.textColor} uppercase`}>
+                              <div className="flex items-center justify-between mb-2">
+                                 <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                                    Sentiment Score
+                                 </span>
+                                 <span className={`text-sm font-bold ${sentimentInfo.textColor} uppercase tracking-wide`}>
                                     {sentimentInfo.label}
                                  </span>
+                              </div>
+                              <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden mb-2">
+                                 <div
+                                    className={`h-full transition-all duration-300 ${
+                                       tweet.analysis.sentiment === 'positive'
+                                          ? 'bg-gradient-to-r from-green-600 to-green-400'
+                                          : tweet.analysis.sentiment === 'negative'
+                                          ? 'bg-gradient-to-r from-red-600 to-red-400'
+                                          : 'bg-gradient-to-r from-gray-600 to-gray-400'
+                                    }`}
+                                    style={{ width: `${confidence}%` }}
+                                 />
+                              </div>
+                              <div className="flex items-center justify-between">
                                  <span className="text-[10px] text-gray-500">
-                                    • {confidence < 50 ? 'Low' : confidence < 75 ? 'Med' : 'High'} Confidence ({confidence}%)
+                                    Confidence: {confidence < 50 ? 'Low' : confidence < 75 ? 'Medium' : 'High'}
+                                 </span>
+                                 <span className="text-[11px] font-mono font-bold text-gray-300">
+                                    {confidence}%
                                  </span>
                               </div>
                            </div>
 
-                           {/* Market Implication */}
+                           {/* Key Drivers */}
+                           <div className="mb-4 pb-4 border-b border-gray-800">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold block mb-2">
+                                 Key Drivers
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                 {tweet.analysis.keywords.slice(0, 3).map((keyword, idx) => (
+                                    <span
+                                       key={idx}
+                                       className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-semibold rounded border border-primary/20">
+                                       {keyword}
+                                    </span>
+                                 ))}
+                              </div>
+                           </div>
+
+                           {/* Market Signal */}
                            <div>
                               <div className="flex items-center justify-between mb-2">
-                                 <h4 className="text-xs font-bold text-white">
-                                    Market Implication
-                                 </h4>
-                                 <span className={`text-xs font-bold ${marketLean.color} uppercase`}>
-                                    {marketLean.label}
+                                 <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                                    Market Signal
                                  </span>
+                                 <div className="flex items-center gap-1.5">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                       confidence >= 40
+                                          ? tweet.analysis.sentiment === 'positive'
+                                             ? 'bg-green-500'
+                                             : tweet.analysis.sentiment === 'negative'
+                                             ? 'bg-red-500'
+                                             : 'bg-gray-500'
+                                          : 'bg-gray-500'
+                                    } animate-pulse`} />
+                                    <span className={`text-xs font-bold ${marketLean.color} uppercase tracking-wide`}>
+                                       {marketLean.label}
+                                    </span>
+                                 </div>
                               </div>
                               <p className="text-xs text-gray-400 leading-relaxed">
                                  {implication}
@@ -272,41 +322,91 @@ export default function IntelAnalysis({
                         onClick={() => handleCardClick(tweet)}
                         onMouseEnter={() => setHoveredTweetId(tweet.tweetDetails.tweetId)}
                         onMouseLeave={() => setHoveredTweetId(null)}
-                        className={`rounded-lg border bg-[#0f1419] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer ${borderClasses}`}>
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-3">
-                           <span className="text-xs text-gray-400">
-                              Ref: @{tweet.tweetDetails.authorUsername}
-                           </span>
-                           <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-800 px-2 py-0.5 rounded">
-                              TWEET
+                        className={`rounded-lg border bg-[#0f1419] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer ${borderClasses}`}>
+                        {/* Compact Header */}
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
+                           <div className="flex items-center gap-2">
+                              <div
+                                 className="w-7 h-7 rounded-full bg-cover bg-center border border-gray-700"
+                                 style={{ backgroundImage: `url("${tweet.tweetDetails.authorAvatarURL}")` }}
+                              />
+                              <span className="text-[10px] text-gray-400 font-medium">
+                                 @{tweet.tweetDetails.authorUsername}
+                              </span>
+                           </div>
+                           <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">
+                              Analysis
                            </span>
                         </div>
 
-                        {/* Sentiment Analysis */}
+                        {/* Sentiment Score with Visual Meter */}
                         <div className="mb-4">
-                           <h4 className="text-xs font-bold text-white mb-2">
-                              Sentiment Analysis
-                           </h4>
-                           <div className="flex items-center justify-between">
-                              <span className={`text-xs font-bold ${sentimentInfo.textColor} uppercase`}>
+                           <div className="flex items-center justify-between mb-2">
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                                 Sentiment Score
+                              </span>
+                              <span className={`text-sm font-bold ${sentimentInfo.textColor} uppercase tracking-wide`}>
                                  {sentimentInfo.label}
                               </span>
+                           </div>
+                           <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden mb-2">
+                              <div
+                                 className={`h-full transition-all duration-300 ${
+                                    tweet.analysis.sentiment === 'positive'
+                                       ? 'bg-gradient-to-r from-green-600 to-green-400'
+                                       : tweet.analysis.sentiment === 'negative'
+                                       ? 'bg-gradient-to-r from-red-600 to-red-400'
+                                       : 'bg-gradient-to-r from-gray-600 to-gray-400'
+                                 }`}
+                                 style={{ width: `${confidence}%` }}
+                              />
+                           </div>
+                           <div className="flex items-center justify-between">
                               <span className="text-[10px] text-gray-500">
-                                 • {confidence < 50 ? 'Low' : confidence < 75 ? 'Med' : 'High'} Confidence ({confidence}%)
+                                 Confidence: {confidence < 50 ? 'Low' : confidence < 75 ? 'Medium' : 'High'}
+                              </span>
+                              <span className="text-[11px] font-mono font-bold text-gray-300">
+                                 {confidence}%
                               </span>
                            </div>
                         </div>
 
-                        {/* Market Implication */}
+                        {/* Key Drivers */}
+                        <div className="mb-4 pb-4 border-b border-gray-800">
+                           <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold block mb-2">
+                              Key Drivers
+                           </span>
+                           <div className="flex flex-wrap gap-1.5">
+                              {tweet.analysis.keywords.slice(0, 3).map((keyword, idx) => (
+                                 <span
+                                    key={idx}
+                                    className="px-2 py-1 bg-primary/10 text-primary text-[10px] font-semibold rounded border border-primary/20">
+                                    {keyword}
+                                 </span>
+                              ))}
+                           </div>
+                        </div>
+
+                        {/* Market Signal */}
                         <div>
                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-xs font-bold text-white">
-                                 Market Implication
-                              </h4>
-                              <span className={`text-xs font-bold ${marketLean.color} uppercase`}>
-                                 {marketLean.label}
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+                                 Market Signal
                               </span>
+                              <div className="flex items-center gap-1.5">
+                                 <span className={`w-1.5 h-1.5 rounded-full ${
+                                    confidence >= 40
+                                       ? tweet.analysis.sentiment === 'positive'
+                                          ? 'bg-green-500'
+                                          : tweet.analysis.sentiment === 'negative'
+                                          ? 'bg-red-500'
+                                          : 'bg-gray-500'
+                                       : 'bg-gray-500'
+                                 } animate-pulse`} />
+                                 <span className={`text-xs font-bold ${marketLean.color} uppercase tracking-wide`}>
+                                    {marketLean.label}
+                                 </span>
+                              </div>
                            </div>
                            <p className="text-xs text-gray-400 leading-relaxed">
                               {implication}

@@ -1,6 +1,6 @@
 {
    "name": "poly-whisper-be",
-   "version": "2.0.7",
+   "version": "2.0.8",
    "description": "Poly-Whisper Backend - TypeScript implementation with LLM-based market matching",
    "main": "dist/index.js",
    "scripts": {
@@ -22,7 +22,6 @@
    },
    "homepage": "https://github.com/belimm/poly-sense#readme",
    "dependencies": {
-      "@google/genai": "^1.27.0",
       "@supabase/supabase-js": "^2.81.0",
       "async": "^3.2.6",
       "cors": "^2.8.5",

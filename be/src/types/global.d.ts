@@ -11,8 +11,6 @@ declare global {
          SUPABASE_SERVICE_ROLE_KEY?: string;
          SUPABASE_ANON_KEY?: string;
          OPENAI_API_KEY?: string;
-         GEMINI_API_KEY?: string;
-         GOOGLE_AI_API_KEY?: string;
          TWITTERAPI_IO_KEY?: string;
          MARKET_CATALOG_REFRESH_INTERVAL?: string;
          MARKET_CATALOG_MIN_VOLUME?: string;

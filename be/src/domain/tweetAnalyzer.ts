@@ -3,7 +3,7 @@
  * Analyzes tweets using LLM for market-relevant keywords and sentiment
  */
 
-import { GoogleAIClient } from '../infrastructure/client/llmClient';
+import { OpenAIClient } from '../infrastructure/client/llmClient';
 import { filterStopwords } from '../utils/stopwords';
 import type { TweetAnalysis } from '../types';
 
@@ -13,7 +13,7 @@ interface TweetAnalyzerOptions {
 
 export class TweetAnalyzer {
    private knownKeywords: Set<string>;
-   private llmClient: GoogleAIClient | null;
+   private llmClient: OpenAIClient | null;
 
    constructor(options: TweetAnalyzerOptions = {}) {
       this.knownKeywords = new Set([
@@ -34,9 +34,9 @@ export class TweetAnalyzer {
 
       // Initialize LLM client if API key is available
       this.llmClient = null;
-      if (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY) {
+      if (process.env.OPENAI_API_KEY) {
          try {
-            this.llmClient = new GoogleAIClient(options.llmOptions || {});
+            this.llmClient = new OpenAIClient(options.llmOptions || {});
             console.log('✅ LLM client initialized successfully');
          } catch (error: any) {
             console.error(
@@ -46,7 +46,7 @@ export class TweetAnalyzer {
          }
       } else {
          console.warn(
-            '⚠️  LLM API keys not found. Set GEMINI_API_KEY or GOOGLE_AI_API_KEY to enable LLM-based analysis'
+            '⚠️  LLM API key not found. Set OPENAI_API_KEY to enable LLM-based analysis'
          );
       }
    }
@@ -98,7 +98,7 @@ export class TweetAnalyzer {
     */
    async analyzeWithLLM(
       text: string,
-      llmClient?: GoogleAIClient
+      llmClient?: OpenAIClient
    ): Promise<TweetAnalysis> {
       const client = llmClient || this.llmClient;
 
@@ -124,7 +124,7 @@ export class TweetAnalyzer {
             ...heuristicResult.keywords,
             ...(llmResult.betting_keywords || []),
             ...(llmResult.financial_instruments || []),
-            ...(llmResult.key_entities || []).map((e) => e.toLowerCase()),
+            ...(llmResult.key_entities || []).map((e: string) => e.toLowerCase()),
          ];
 
          // Apply stopwords filter to remove irrelevant keywords
